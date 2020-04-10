@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+	<AddIn Type="Application">
+		<Name>CreateSpacesFromLinkedRooms</Name>
+		<Assembly>SynSys\Create Spaces From Linked Rooms\CreateSpacesFromLinkedRooms.dll</Assembly>
+		<FullClassName>CreateSpacesFromLinkedRooms.App</FullClassName>
+		<AddInId>cad0870d-ad7f-4487-9158-428b8b996998</AddInId>
+		<VendorId>Synergy Systems</VendorId>
+		<VendorDescription>amaslov@synsys.co</VendorDescription>
+	</AddIn>
+</RevitAddIns>

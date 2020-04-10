@@ -1,0 +1,5 @@
+.txt
+.addin
+.pdb
+.config
+.xml
