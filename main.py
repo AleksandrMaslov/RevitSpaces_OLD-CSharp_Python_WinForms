@@ -56,13 +56,6 @@ def create_levelid_dct(doc):
 # @timer
 def create_base_dict():
     link_inst = FilteredElementCollector(doc).OfClass(RevitLinkInstance).ToElements()
-
-    # ВЫБОР ЛИНКА ПО ИНДЕКСУ
-    # link = link_inst[A_Link_Number-1]
-    # link_doc = link.GetLinkDocument()
-    # link_elem = FilteredElementCollector(link_doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
-
-    # ВЫБОР ЛИНКА АВТОМАТОМ ПО УСЛОВИЮ, ТУТ ВЕРОЯТНО ДОЛЖНО БЫТЬ ОКНО ВЫБОРА))
     unl_lnk_number = 0
     link_doc = None
     for lnk in link_inst:
@@ -116,31 +109,32 @@ def create_base_dict():
                     else:
                         # print 'Room Number "{}" is not placed in the A model'.format(element.Number)
                         logger.add_blank_line()
-                        logger.write_log('Room Number "{}" is not placed in the A model'.format(element.Number), Logger.WARNING)
+                        logger.write_log('Room Number "{}" is not placed in the A model'.format(element.Number))
                         logger.add_blank_line()
     return dct_base_elem
 
 
 # @timer
 def create_new_instance(main_dct):
-    placed_dct = {}
+    counter = 0
     for _id, features in main_dct.items():
         loc_p = features['loc']
-        instance = doc.Create.NewSpace(features['lvl'], UV(loc_p.X, loc_p.Y))
-        placed_dct[instance.Id] = instance
-        instance.GetParameters('Number')[0].Set(features['num'])
-        instance.GetParameters('Name')[0].Set(features['nam'])
-        instance.GetParameters('Base Offset')[0].Set(features['bof'])
-        instance.GetParameters('Limit Offset')[0].Set(features['lof'])
-        instance.GetParameters('Upper Limit')[0].Set(features['upl'])
+        try:
+            instance = doc.Create.NewSpace(features['lvl'], UV(loc_p.X, loc_p.Y))
+            instance.GetParameters('Number')[0].Set(features['num'])
+            instance.GetParameters('Name')[0].Set(features['nam'])
+            instance.GetParameters('Base Offset')[0].Set(features['bof'])
+            instance.GetParameters('Limit Offset')[0].Set(features['lof'])
+            instance.GetParameters('Upper Limit')[0].Set(features['upl'])
 
-    # print '\nSpaces Placed: ', len(placed_dct)
-    logger.write_log('Spaces Placed: {}'.format(len(placed_dct)), Logger.INFO)
-    return placed_dct
+            counter += 1
+            logger.write_log('Spaces Placed: {}'.format(counter, Logger.INFO))
+        except Exception as e:
+            logger.write_log('{}\nНомер помещения: {}'.format(e, features['num']))
 
 
 # @timer
-def delete_instance(doc):
+def delete_instance():
     fec_spc = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MEPSpaces).WhereElementIsNotElementType().ToElements()
     del_num = 0
     for el in fec_spc:
@@ -151,16 +145,13 @@ def delete_instance(doc):
     return
 
 
-# @timer
-def main():
-    transaction.Start('Renew Spaces')
-
-    delete_instance(doc)
-    base_dct = create_base_dict()
-    create_new_instance(base_dct)
-
-    transaction.Commit()
-
-
 logger.write_log('Запуск состоялся', Logger.INFO)
-main()
+transaction.Start('Delete Old Spaces')
+delete_instance()
+transaction.Commit()
+
+base_dct = create_base_dict()
+
+transaction.Start('Create Spaces')
+create_new_instance(base_dct)
+transaction.Commit()
