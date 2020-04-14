@@ -145,13 +145,17 @@ def delete_instance():
     return
 
 
-logger.write_log('Запуск состоялся', Logger.INFO)
-transaction.Start('Delete Old Spaces')
-delete_instance()
-transaction.Commit()
+def main():
+    logger.write_log('Запуск состоялся', Logger.INFO)
+    transaction.Start('Delete Old Spaces')
+    delete_instance()
+    transaction.Commit()
 
-base_dct = create_base_dict()
+    base_dct = create_base_dict()
 
-transaction.Start('Create Spaces')
-create_new_instance(base_dct)
-transaction.Commit()
+    transaction.Start('Create Spaces')
+    create_new_instance(base_dct)
+    transaction.Commit()
+
+
+main()
