@@ -3,68 +3,129 @@ import clr
 import sys
 sys.path.append(r'C:\Program Files (x86)\IronPython 2.7\Lib')
 import os
-sys.path.append(os.path.dirname(__file__))
+# sys.path.append(os.path.dirname(__file__))
+sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 from Autodesk.Revit.UI import TaskDialog  # noqa
 from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, Level, RevitLinkInstance, UV, Transaction,  # noqa
                                FilteredWorksetCollector, WorksetKind, Phase, BuiltInParameter)
 from lite_logging import Logger  # noqa
+from main_window import MainWindow  # noqa
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
                 default_status=Logger.WARNING)
+doc = __revit__.ActiveUIDocument.Document  # noqa
 transaction = Transaction(doc)  # noqa
+# __window__.Close()
 
 
-def create_phase_dct(doc,link_doc):
-    fec_ph_c = FilteredElementCollector(doc).OfClass(Phase).ToElements()
-    fec_ph_l = FilteredElementCollector(link_doc).OfClass(Phase).ToElements()
-    dct_phase = {}
-    dct_phase_c = {}
-    dct_phase_l = {}
-
-    for phase in fec_ph_c:
-        dct_phase_c[phase.Name] = phase
-    dct_phase_l = {}
-    for phase in fec_ph_l:
-        dct_phase_l[phase.Id] = phase.Name
-    if len(dct_phase_c) == len(dct_phase_l):
-        for _id, nam in dct_phase_l.items():
-            if nam not in dct_phase_c:
-                dct_phase = {}
-            else:
-                dct_phase[_id] = dct_phase_c[nam]
-    return dct_phase
+def _create_phase_name_dct(doc):
+    dct = {}
+    fec = FilteredElementCollector(doc).OfClass(Phase).ToElements()
+    for phase in fec:
+        dct[phase.Name] = phase
+    return dct
 
 
-def workset_spaces():
-    sws = 0
-    fec_works = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
-    for ws in fec_works:
-        if ws.Name == 'Model Spaces':
-            sws = ws.Id.IntegerValue
-    return sws
+def _create_phase_id_dct(doc):
+    dct = {}
+    fec = FilteredElementCollector(doc).OfClass(Phase).ToElements()
+    for phase in fec:
+        dct[phase.Id] = phase
+    return dct
 
 
-def create_level_dct(doc):
-    fec_lvl = FilteredElementCollector(doc).OfClass(Level).WhereElementIsNotElementType().ToElements()
-    dct_lvl = {}
-    for lev in fec_lvl:
-        dct_lvl[lev.Name] = {}
-        dct_lvl[lev.Name]['inst'] = lev
-        dct_lvl[lev.Name]['lid'] = lev.Id
-    return dct_lvl
+def _find_workset_modelspaces_id(doc):
+    fec = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
+    for workset in fec:
+        if workset.Name == 'Model Spaces':
+            workset_id = workset.Id.IntegerValue
+            return workset_id
+    return 0
 
 
-def create_levelid_dct(doc):
-    fec_lvl = FilteredElementCollector(doc).OfClass(Level).WhereElementIsNotElementType().ToElements()
-    dct_lvl = {}
-    for lev in fec_lvl:
-        dct_lvl[lev.Id] = {}
-        dct_lvl[lev.Id]['inst'] = lev
-        dct_lvl[lev.Id]['name'] = lev.Name
-    return dct_lvl
+def _create_level_name_dct(doc):
+    fec = FilteredElementCollector(doc).OfClass(Level).WhereElementIsNotElementType().ToElements()
+    dct = {}
+    for level in fec:
+        dct[level.Name] = {}
+        dct[level.Name]['instance'] = level
+        dct[level.Name]['id'] = level.Id
+    return dct
+
+
+def _create_level_id_dct(doc):
+    fec = FilteredElementCollector(doc).OfClass(Level).WhereElementIsNotElementType().ToElements()
+    dct = {}
+    for level in fec:
+        dct[level.Id] = {}
+        dct[level.Id]['instance'] = level
+        dct[level.Id]['name'] = level.Name
+    return dct
+
+
+def _create_link_document_name_dct(doc):
+    dct = {}
+    fec = FilteredElementCollector(doc).OfClass(RevitLinkInstance).ToElements()
+    for link_instance in fec:
+        link_document = link_instance.GetLinkDocument()
+        if link_document is not None:
+            name = link_instance.get_Parameter(BuiltInParameter.ELEM_TYPE_PARAM).AsValueString()
+            dct[name] = link_document
+    return dct
+
+
+def _create_spaces_by_phase_dct(doc, current_phases):
+    dct = {}
+    fec = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MEPSpaces).WhereElementIsNotElementType().ToElements()
+    for space in fec:
+        phase_name = space.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
+        space_id = space.Id.IntegerValue
+        if phase_name not in dct:
+            dct[phase_name] = {}
+        dct[phase_name].update({space_id: space})
+    return dct
+
+
+def _create_rooms_by_link_and_phase_dct(doc, current_links):
+    dct = {}
+    for link_name, link_doc in current_links.items():
+        if link_name not in dct:
+            dct[link_name] = {}
+        fec = FilteredElementCollector(link_doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
+        for room in fec:
+            phase_name = room.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
+            room_id = room.Id.IntegerValue
+            if phase_name not in dct:
+                dct[link_name][phase_name] = {}
+            dct[link_name][phase_name].update({room_id: room})
+    
+    for link, phases in dct.items():
+        print link
+        for room in phases:
+            print room
+        print
+    return dct
+
+
+def _verification_model_spaces_workset():
+    workset_model_spaces_id = _find_workset_modelspaces_id(doc)
+    if workset_model_spaces_id != 0:
+        status_workset = 'Verified'
+    else:
+        status_workset = 'Error'
+    return status_workset
+
+
+def _verification():
+    status_workset = _verification_model_spaces_workset()
+    status_phases = ''
+    status_levels = ''
+
+    statuses = [status_workset]
+    return statuses
 
 
 def create_new_instance():
@@ -163,28 +224,17 @@ def create_new_instance():
         TaskDialog.Show('ERROR', 'No "Model Spaces" workset. Please create it.')
 
 
-def delete_instance():
-    msg = ''
-    fec_spc = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MEPSpaces).WhereElementIsNotElementType().ToElements()
-    del_num = 0
-    for el in fec_spc:
-        doc.Delete(el.Id)
-        del_num += 1
-    logger.write_log('Spaces Deleted: {}'.format(del_num), Logger.INFO)
-    msg = msg + '\nSpaces Deleted: {}'.format(del_num)
-    TaskDialog.Show('INFORMATION', msg)
-    return
-
-
-def main():
+def Main():
     logger.write_log('Launched successfully', Logger.INFO)
-    transaction.Start('Delete Old Spaces')
-    delete_instance()
-    transaction.Commit()
+    statuses = _verification()
+    current_phases = _create_phase_name_dct(doc)
+    current_links = _create_link_document_name_dct(doc)
+    current_spaces_by_phase = _create_spaces_by_phase_dct(doc, current_phases)
+    rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(doc, current_links)
 
-    transaction.Start('Create Spaces')
-    create_new_instance()
-    transaction.Commit()
+    mw = MainWindow(doc, current_spaces_by_phase, rooms_by_link_and_phase)
+    mw.ShowDialog()
 
 
-main()
+if __name__ == '__main__':
+    Main()
