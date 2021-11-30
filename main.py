@@ -43,7 +43,6 @@ def _find_workset_modelspaces_id(doc):
         if workset.Name == 'Model Spaces':
             workset_id = workset.Id.IntegerValue
             return workset_id
-    return 0
 
 
 def _create_level_name_dct(doc):
@@ -102,24 +101,6 @@ def _create_rooms_by_link_and_phase_dct(doc, current_links):
                 dct[link_name][phase_name] = {}
             dct[link_name][phase_name].update({room_id: room})
     return dct
-
-
-def _verification_model_spaces_workset():
-    workset_model_spaces_id = _find_workset_modelspaces_id(doc)
-    if workset_model_spaces_id != 0:
-        status_workset = 'Verified'
-    else:
-        status_workset = 'Error'
-    return status_workset
-
-
-def _verification():
-    status_workset = _verification_model_spaces_workset()
-    status_phases = ''
-    status_levels = ''
-
-    statuses = [status_workset]
-    return statuses
 
 
 def create_new_instance():
@@ -220,14 +201,18 @@ def create_new_instance():
 
 def Main():
     logger.write_log('Launched successfully', Logger.INFO)
-    statuses = _verification()
-    current_phases = _create_phase_name_dct(doc)
-    current_links = _create_link_document_name_dct(doc)
-    current_spaces_by_phase = _create_spaces_by_phase_dct(doc, current_phases)
-    rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(doc, current_links)
+    workset_spaces_id = _find_workset_modelspaces_id(doc)
+    if workset_spaces_id:
+        current_phases = _create_phase_name_dct(doc)
+        current_links = _create_link_document_name_dct(doc)
+        current_spaces_by_phase = _create_spaces_by_phase_dct(doc, current_phases)
+        rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(doc, current_links)
 
-    mw = MainWindow(doc, current_spaces_by_phase, rooms_by_link_and_phase)
-    mw.ShowDialog()
+        mw = MainWindow(doc, current_spaces_by_phase, rooms_by_link_and_phase)
+        mw.ShowDialog()
+    else:
+        logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
+        TaskDialog.Show('Error', 'There is no "Model Spaces" workset in the Current model. Please create it and relaunch the Addin.')        
 
 
 if __name__ == '__main__':
