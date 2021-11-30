@@ -16,12 +16,17 @@ logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spac
 doc = __revit__.ActiveUIDocument.Document
 transaction = Transaction(doc)
 
+# ADD CURRENT VIEW PHASE LABEL
+# ADD INFORMATION FORM BEFORE SPACES CREATION
 
 class MainWindow(Form):
-    def __init__(self, doc, current_spaces_by_phase, rooms_by_link_and_phase):
+    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, levels_by_link_and_phase):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
         self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
+        self.workset_spaces_id = workset_spaces_id
+        self.current_levels = current_levels
+        self.levels_by_link_and_phase = levels_by_link_and_phase
         self._initialize_components()
 
     def _initialize_components(self):

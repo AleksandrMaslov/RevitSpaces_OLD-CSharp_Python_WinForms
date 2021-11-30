@@ -21,22 +21,6 @@ transaction = Transaction(doc)  # noqa
 # __window__.Close()
 
 
-def _create_phase_name_dct(doc):
-    dct = {}
-    fec = FilteredElementCollector(doc).OfClass(Phase).ToElements()
-    for phase in fec:
-        dct[phase.Name] = phase
-    return dct
-
-
-def _create_phase_id_dct(doc):
-    dct = {}
-    fec = FilteredElementCollector(doc).OfClass(Phase).ToElements()
-    for phase in fec:
-        dct[phase.Id] = phase
-    return dct
-
-
 def _find_workset_modelspaces_id(doc):
     fec = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
     for workset in fec:
@@ -51,17 +35,7 @@ def _create_level_name_dct(doc):
     for level in fec:
         dct[level.Name] = {}
         dct[level.Name]['instance'] = level
-        dct[level.Name]['id'] = level.Id
-    return dct
-
-
-def _create_level_id_dct(doc):
-    fec = FilteredElementCollector(doc).OfClass(Level).WhereElementIsNotElementType().ToElements()
-    dct = {}
-    for level in fec:
-        dct[level.Id] = {}
-        dct[level.Id]['instance'] = level
-        dct[level.Id]['name'] = level.Name
+        dct[level.Name]['elevation'] = level.ProjectElevation
     return dct
 
 
@@ -76,7 +50,7 @@ def _create_link_document_name_dct(doc):
     return dct
 
 
-def _create_spaces_by_phase_dct(doc, current_phases):
+def _create_spaces_by_phase_dct(doc):
     dct = {}
     fec = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MEPSpaces).WhereElementIsNotElementType().ToElements()
     for space in fec:
@@ -88,7 +62,7 @@ def _create_spaces_by_phase_dct(doc, current_phases):
     return dct
 
 
-def _create_rooms_by_link_and_phase_dct(doc, current_links):
+def _create_rooms_by_link_and_phase_dct(current_links):
     dct = {}
     for link_name, link_doc in current_links.items():
         if link_name not in dct:
@@ -100,6 +74,21 @@ def _create_rooms_by_link_and_phase_dct(doc, current_links):
             if phase_name not in dct[link_name]:
                 dct[link_name][phase_name] = {}
             dct[link_name][phase_name].update({room_id: room})
+    return dct
+
+
+def _create_levels_by_link_and_phase_dct(current_links):
+    dct = {}
+    for link_name, link_doc in current_links.items():
+        if link_name not in dct:
+            dct[link_name] = {}
+        fec = FilteredElementCollector(link_doc).OfCategory(BuiltInCategory.OST_Levels).WhereElementIsNotElementType().ToElements()
+        for level in fec:
+            level_name = level.Name
+            if level_name not in dct[link_name]:
+                dct[link_name][level_name] = {}
+            dct[link_name][level_name].update({'instance': level,
+                                               'elevation': level.ProjectElevation})
     return dct
 
 
@@ -203,12 +192,13 @@ def Main():
     logger.write_log('Launched successfully', Logger.INFO)
     workset_spaces_id = _find_workset_modelspaces_id(doc)
     if workset_spaces_id:
-        current_phases = _create_phase_name_dct(doc)
+        current_levels = _create_level_name_dct(doc)
         current_links = _create_link_document_name_dct(doc)
-        current_spaces_by_phase = _create_spaces_by_phase_dct(doc, current_phases)
-        rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(doc, current_links)
+        current_spaces_by_phase = _create_spaces_by_phase_dct(doc)
+        rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(current_links)
+        levels_by_link_and_phase = _create_levels_by_link_and_phase_dct(current_links)
 
-        mw = MainWindow(doc, current_spaces_by_phase, rooms_by_link_and_phase)
+        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, levels_by_link_and_phase)
         mw.ShowDialog()
     else:
         logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
