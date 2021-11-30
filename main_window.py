@@ -7,9 +7,10 @@ from System.Windows.Forms import (Application, Button, StatusBar, Form, ListView
 from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
 
 
-class SpacesWindow(Form):
-    def __init__(self):
-        self._doc = "" # doc
+    def __init__(self, doc, current_spaces_by_phase, rooms_by_link_and_phase):
+        self.doc = doc
+        self.spaces_by_phase_dct = current_spaces_by_phase
+        self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
         # self._data = get_spaces_info(doc, BuiltInCategory.OST_MEPSpaces)
         # self._lvls = get_levels_info(doc)
         # self._link_doc = get_link_doc()
@@ -152,6 +153,8 @@ class SpacesWindow(Form):
 
     def _load_window(self, sender, e):
         self._fill_list_view()
+        self._fill_combobox_phase()
+        self._fill_combobox_link()
 
     def _fill_list_view(self):
         row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
@@ -161,8 +164,20 @@ class SpacesWindow(Form):
             item.UseItemStyleForSubItems = True
             item.Font = Font("Arial", 8.6, FontStyle.Regular)
             self.list_view.Items.Add(item)
-            for status in statuses:
-                item.SubItems.Add(status)
+    def _fill_combobox_phase(self):
+        for phase_name, spaces in self.spaces_by_phase_dct.items():
+            spaces_number = len(spaces)
+            item = '{} Spaces - {}'.format(spaces_number, phase_name)
+            self.combobox_phase.Items.Add(item)
+
+    def _fill_combobox_link(self):
+        for link_name, phases in self.rooms_by_link_and_phase_dct.items():
+            rooms_number_total = 0
+            for rooms in phases:
+                rooms_number_phase = len(rooms)
+                rooms_number_total += rooms_number_phase
+            item = '{} Rooms - {}'.format(rooms_number_total, link_name)
+            self.combobox_link.Items.Add(item)
 
         # self._list_view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize)
         # self.list_view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
