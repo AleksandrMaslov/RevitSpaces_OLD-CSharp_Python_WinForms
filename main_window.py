@@ -9,7 +9,6 @@ from System.Drawing import Point, Size, Rectangle
 from Autodesk.Revit.DB import Transaction, TransactionStatus
 from Autodesk.Revit.UI import TaskDialog
 from lite_logging import Logger
-# from main import Main
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
@@ -23,9 +22,6 @@ class MainWindow(Form):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
         self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
-        # self._data = get_spaces_info(doc, BuiltInCategory.OST_MEPSpaces)
-        # self._lvls = get_levels_info(doc)
-        # self._link_doc = get_link_doc()
         self._initialize_components()
 
     def _initialize_components(self):
