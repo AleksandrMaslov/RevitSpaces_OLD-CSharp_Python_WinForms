@@ -35,7 +35,6 @@ class MainWindow(Form):
         self.ShowIcon = False
         self.FormBorderStyle = FormBorderStyle.FixedToolWindow
 
-
         # listview
         self.list_view_width = self.form_width - 35
         self.list_column_width_verification = (self.list_view_width - 3) * 0.6
@@ -56,7 +55,6 @@ class MainWindow(Form):
         self.list_view.Columns.Add('Verification', self.list_column_width_verification, HorizontalAlignment.Center)
         self.list_view.Columns.Add('Status', self.list_column_width_status, HorizontalAlignment.Center)
         self.Controls.Add(self.list_view)
-
 
         # groupboxes
         self.groupbox_offset_left = 5
@@ -79,7 +77,6 @@ class MainWindow(Form):
         self.groupbox_linked.Size = Size(self.groupbox_width, self.groupbox_linked_length)
         self.Controls.Add(self.groupbox_linked)
 
-
         # comboboxes
         self.combobox_width = self.groupbox_width - self.groupbox_offset_left * 2
 
@@ -94,13 +91,13 @@ class MainWindow(Form):
         self.combobox_link.Location = Point(self.groupbox_offset_left, self.groupbox_offset_top)
         self.combobox_link.Text = " - Select Link - "
         self.combobox_link.Size = Size(self.combobox_width, 0)
+        self.combobox_link.SelectedIndexChanged += self._changed_combobox_link_selection
 
         self.combobox_link_phase = ComboBox()
         self.combobox_link_phase.Parent = self.groupbox_linked
         self.combobox_link_phase.Location = Point(self.groupbox_offset_left, self.groupbox_offset_top + 25)
         self.combobox_link_phase.Text = " - Select Phase - "
         self.combobox_link_phase.Size = Size(self.combobox_width, 0)
-
 
         # buttons
         self.button_width = 50 
@@ -150,7 +147,7 @@ class MainWindow(Form):
         btn_create_selected.Size = Size(self.button_width_large, self.button_length)
         btn_create_selected.Location = Point(self.groupbox_width - self.button_width_large - self.groupbox_offset_left - 1, self.button_location_linked_Y)
         btn_create_selected.Parent = self.groupbox_linked
-        # btn_report.Click += self._is_click_btn1
+        btn_create_selected.Click += self._click_btn_create_selected
 
         #satusbar
         self.statusbar = StatusBar()
@@ -182,7 +179,7 @@ class MainWindow(Form):
     def _click_btn_delete_selected(self, sender, e):
         selected_item = self.combobox_phase.SelectedItem
         if selected_item:
-            phase_name = selected_item.split(' - ')[1]
+            phase_name = selected_item.split(' - ', 1)[1]
             with Transaction(doc) as t:
                 t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
                 deleted_counter = self._delete_spaces_by_phase_name(phase_name)
@@ -195,7 +192,32 @@ class MainWindow(Form):
                     logger.write_log('Spaces Deleted: {}'.format(deleted_counter), Logger.INFO)
                     TaskDialog.Show('Report', msg)
         else:
-            TaskDialog.Show('Error', '\nPhase is not selected in the current model.')
+            TaskDialog.Show('Error', '\nPhase is not selected in the Current model.')
+
+    def _changed_combobox_link_selection(self, sender, e):
+        selected_link_item = self.combobox_link.SelectedItem
+        if selected_link_item:
+            link_name = selected_link_item.split(' - ')[1]
+            link_rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
+            self.combobox_link_phase.Items.Clear()
+            for phase_name, rooms in link_rooms_by_phase_dct.items():
+                room_number = len(rooms)
+                item = '{} Rooms - {}'.format(room_number, phase_name)
+                self.combobox_link_phase.Items.Add(item)                
+        else:
+            TaskDialog.Show('Error', '\nLink is not selected for analize.')
+
+    def _click_btn_create_selected(self, sender, e):
+        selected_link_item = self.combobox_link.SelectedItem
+        selected_link_phase_item = self.combobox_link_phase.SelectedItem
+        if selected_link_item and selected_link_phase_item:
+            link_name = selected_link_item.split(' - ', 1)[1]
+            phase_name = selected_link_phase_item.split(' - ', 1)[1]
+            link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
+            for room in link_rooms_from_phase.values():
+                space = self._create_space_by_room_instance(room)
+        else:
+            TaskDialog.Show('Error', '\nPhase is not selected in the Linked model.')           
 
     def _fill_list_view(self):
         row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
@@ -215,7 +237,7 @@ class MainWindow(Form):
     def _fill_combobox_link(self):
         for link_name, phases in self.rooms_by_link_and_phase_dct.items():
             rooms_number_total = 0
-            for rooms in phases:
+            for rooms in phases.values():
                 rooms_number_phase = len(rooms)
                 rooms_number_total += rooms_number_phase
             item = '{} Rooms - {}'.format(rooms_number_total, link_name)
@@ -238,6 +260,9 @@ class MainWindow(Form):
             self.doc.Delete(space.Id)
             deleted_counter += 1 
         return deleted_counter
+
+    def _create_space_by_room_instance(self, room):
+        print room
 
 
 if __name__ == '__main__':

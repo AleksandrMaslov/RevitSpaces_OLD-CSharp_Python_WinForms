@@ -98,15 +98,9 @@ def _create_rooms_by_link_and_phase_dct(doc, current_links):
         for room in fec:
             phase_name = room.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
             room_id = room.Id.IntegerValue
-            if phase_name not in dct:
+            if phase_name not in dct[link_name]:
                 dct[link_name][phase_name] = {}
             dct[link_name][phase_name].update({room_id: room})
-    
-    for link, phases in dct.items():
-        print link
-        for room in phases:
-            print room
-        print
     return dct
 
 
