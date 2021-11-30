@@ -1,11 +1,21 @@
 import clr
+import os
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
-from System.Windows.Forms import (Application, Button, StatusBar, Form, ListView, ImageList, AnchorStyles, ColumnHeaderAutoResizeStyle,
-                                  StatusBar, SelectionMode, ListViewItem, View, SortOrder, HorizontalAlignment, TabControl, TabPage, Padding,
-                                  FormBorderStyle, Label, GroupBox, ComboBox)
-from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
+clr.AddReference('RevitAPIUI')
+from System.Windows.Forms import (Button, StatusBar, Form, ListView, StatusBar, ListViewItem, View, SortOrder, HorizontalAlignment,
+                                  FormBorderStyle, GroupBox, ComboBox)
+from System.Drawing import Point, Size, Rectangle
+from Autodesk.Revit.DB import Transaction, TransactionStatus
+from Autodesk.Revit.UI import TaskDialog
+from lite_logging import Logger
+# from main import Main
 
+logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
+                file_name='test_log',
+                default_status=Logger.WARNING)
+doc = __revit__.ActiveUIDocument.Document
+transaction = Transaction(doc)
 
 
 class MainWindow(Form):
@@ -130,7 +140,7 @@ class MainWindow(Form):
         btn_delete_selected.Size = Size(self.button_width_large, self.button_length)
         btn_delete_selected.Location = Point(self.groupbox_width - self.button_width_large - self.groupbox_offset_left - 1, self.button_location_current_Y)
         btn_delete_selected.Parent = self.groupbox_current
-        # btn_report.Click += self._is_click_btn1
+        btn_delete_selected.Click += self._click_btn_delete_selected
 
         btn_create_all = Button()
         btn_create_all.Text = 'Create All'
@@ -158,6 +168,22 @@ class MainWindow(Form):
         self._fill_combobox_phase()
         self._fill_combobox_link()
 
+    def _click_btn_delete_selected(self, sender, e):
+        selected_item = self.combobox_phase.SelectedItem
+        if selected_item:
+            phase_name = selected_item.split(' - ')[1]
+            with Transaction(doc) as t:
+                deleted_counter = self._delete_selected_spaces(t, phase_name)
+                if t.GetStatus() == TransactionStatus.Committed:
+                    self.spaces_by_phase_dct.pop(phase_name)
+                    self.combobox_phase.Items.Remove(selected_item)
+
+                    msg = '\nTotal "{}" Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name)
+                    logger.write_log('Spaces Deleted: {}'.format(deleted_counter), Logger.INFO)
+                    TaskDialog.Show('Report', msg)
+        else:
+            TaskDialog.Show('Error', '\nPhase is not selected in the current model.')
+
     def _fill_list_view(self):
         row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
         statuses = ['Not Verified', 'VERIFIED', 'Verified']
@@ -182,8 +208,15 @@ class MainWindow(Form):
             item = '{} Rooms - {}'.format(rooms_number_total, link_name)
             self.combobox_link.Items.Add(item)
 
-        # self._list_view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize)
-        # self.list_view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
+    def _delete_selected_spaces(self, t, phase_name):
+        deleted_counter = 0
+        spaces = self.spaces_by_phase_dct[phase_name]
+        t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
+        for space in spaces.values():
+            self.doc.Delete(space.Id)
+            deleted_counter += 1 
+        t.Commit()
+        return deleted_counter 
 
 
 if __name__ == '__main__':
