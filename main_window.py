@@ -133,7 +133,7 @@ class MainWindow(Form):
         btn_delete_all.Size = Size(self.button_width_large, self.button_length)
         btn_delete_all.Location = Point(self.groupbox_offset_left, self.button_location_current_Y)
         btn_delete_all.Parent = self.groupbox_current
-        # btn_report.Click += self._is_click_btn1
+        btn_delete_all.Click += self._click_btn_delete_all
 
         btn_delete_selected = Button()
         btn_delete_selected.Text = 'Delete Selected'
@@ -156,7 +156,6 @@ class MainWindow(Form):
         btn_create_selected.Parent = self.groupbox_linked
         # btn_report.Click += self._is_click_btn1
 
-
         #satusbar
         self.statusbar = StatusBar()
         self.statusbar.Parent = self
@@ -168,12 +167,30 @@ class MainWindow(Form):
         self._fill_combobox_phase()
         self._fill_combobox_link()
 
+    def _click_btn_delete_all(self, sender, e):
+        if len(self.combobox_phase.Items) == 0:
+            TaskDialog.Show('Warning', '\nNo Spaces in the current model')
+            return
+        with Transaction(doc) as t:
+            t.Start('Delete All Spaces')
+            deleleted_counter, phases_counter, phases_list = self._delete_all_spaces()
+            t.Commit()
+            if t.GetStatus() == TransactionStatus.Committed:
+                self.spaces_by_phase_dct = {}
+                self.combobox_phase.Items.Clear()
+
+                msg = '\nTotal "{}" Spaces have been deleted\nin "{}" model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
+                logger.write_log('Spaces Deleted: {}'.format(deleleted_counter), Logger.INFO)
+                TaskDialog.Show('Report', msg)
+
     def _click_btn_delete_selected(self, sender, e):
         selected_item = self.combobox_phase.SelectedItem
         if selected_item:
             phase_name = selected_item.split(' - ')[1]
             with Transaction(doc) as t:
-                deleted_counter = self._delete_selected_spaces(t, phase_name)
+                t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
+                deleted_counter = self._delete_spaces_by_phase_name(phase_name)
+                t.Commit()
                 if t.GetStatus() == TransactionStatus.Committed:
                     self.spaces_by_phase_dct.pop(phase_name)
                     self.combobox_phase.Items.Remove(selected_item)
@@ -208,17 +225,25 @@ class MainWindow(Form):
             item = '{} Rooms - {}'.format(rooms_number_total, link_name)
             self.combobox_link.Items.Add(item)
 
-    def _delete_selected_spaces(self, t, phase_name):
+    def _delete_all_spaces(self):
+        deleleted_counter = 0
+        phases_counter = 0
+        phases_list = ''
+        for phase_name in self.spaces_by_phase_dct.keys():
+            phases_counter += 1
+            phases_list += '{}\n'.format(phase_name)
+            deleleted_counter += self._delete_spaces_by_phase_name(phase_name)
+        return deleleted_counter, phases_counter, phases_list
+
+    def _delete_spaces_by_phase_name(self, phase_name):
         deleted_counter = 0
         spaces = self.spaces_by_phase_dct[phase_name]
-        t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
         for space in spaces.values():
             self.doc.Delete(space.Id)
             deleted_counter += 1 
-        t.Commit()
-        return deleted_counter 
+        return deleted_counter
 
 
 if __name__ == '__main__':
     main_window = MainWindow()
-main_window.ShowDialog()
+    main_window.ShowDialog()
