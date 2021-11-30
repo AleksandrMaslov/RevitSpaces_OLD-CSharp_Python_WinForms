@@ -7,6 +7,8 @@ from System.Windows.Forms import (Application, Button, StatusBar, Form, ListView
 from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
 
 
+
+class MainWindow(Form):
     def __init__(self, doc, current_spaces_by_phase, rooms_by_link_and_phase):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
@@ -18,9 +20,9 @@ from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
 
     def _initialize_components(self):
         # window
-        self.Text = 'Spaces from Linked Rooms'
-        self.form_length = 330
-        self.form_width = 220
+        self.Text = 'Spaces Manager'
+        self.form_length = 430
+        self.form_width = 320
         self.MinimumSize = Size(self.form_width, self.form_length)
         self.Size = Size(self.form_width, self.form_length)
         self.CenterToScreen()
@@ -29,10 +31,10 @@ from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
 
 
         # listview
-        self.list_view_width = self.form_width - 10
+        self.list_view_width = self.form_width - 35
         self.list_column_width_verification = (self.list_view_width - 3) * 0.6
         self.list_column_width_status = (self.list_view_width - 3) * 0.4
-        self.list_view_length = 70
+        self.list_view_length = 110
         self.list_offset_left = 3
         self.list_offset_top = 3
 
@@ -102,11 +104,11 @@ from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
         self.button_location_current_Y = self.groupbox_current_length - self.button_length - 6
         self.button_location_linked_Y = self.groupbox_linked_length - self.button_length - 6
 
-        btn_report = Button()
-        btn_report.Text = 'Report'
-        btn_report.Parent = self
-        btn_report.Size = Size(self.button_width, self.button_length)
-        btn_report.Location = Point(self.list_offset_left, self.list_view_length + 5)
+        btn_errors = Button()
+        btn_errors.Text = 'Errors'
+        btn_errors.Parent = self
+        btn_errors.Size = Size(self.button_width, self.button_length)
+        btn_errors.Location = Point(self.list_offset_left, self.list_view_length + 5)
         # btn_report.Click += self._is_click_btn1
     
         btn_help = Button()
@@ -158,12 +160,13 @@ from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
 
     def _fill_list_view(self):
         row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
-        statuses = ['*VERIFIED*', '*VERIFIED*', '*VERIFIED*']
-        for row_name in row_names:
+        statuses = ['Not Verified', 'VERIFIED', 'Verified']
+        for index, row_name in enumerate(row_names):
             item = ListViewItem(row_name)
             item.UseItemStyleForSubItems = True
-            item.Font = Font("Arial", 8.6, FontStyle.Regular)
             self.list_view.Items.Add(item)
+            item.SubItems.Add(statuses[index])
+
     def _fill_combobox_phase(self):
         for phase_name, spaces in self.spaces_by_phase_dct.items():
             spaces_number = len(spaces)
@@ -183,5 +186,6 @@ from System.Drawing import Point, Size, Rectangle, Color, Font, FontStyle
         # self.list_view.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent)
 
 
-main_window = SpacesWindow()
+if __name__ == '__main__':
+    main_window = MainWindow()
 main_window.ShowDialog()
