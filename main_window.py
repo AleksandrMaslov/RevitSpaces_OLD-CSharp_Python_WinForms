@@ -289,10 +289,6 @@ class MainWindow(Form):
         # print '{} {} {} {}'.format(rooms_area_incorrect['total'], rooms_level_is_missing['total'], rooms_level_incorrect['total'], sorted_rooms['total'])
         return rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms
 
-    def _create_space_by_room_instance(self, room):
-        pass
-        # print room
-
 
 if __name__ == '__main__':
     main_window = MainWindow()
