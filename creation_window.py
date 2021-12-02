@@ -16,8 +16,8 @@ from Autodesk.Revit.UI import TaskDialog
 
 
 class CreationWindow(Form):
-    def __init__(self):#, doc):
-        # self.doc = doc
+    def __init__(self, doc, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms):
+        self.doc = doc
         self._initialize_components()
 
     def _initialize_components(self):

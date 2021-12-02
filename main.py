@@ -7,17 +7,18 @@ import os
 sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
-from Autodesk.Revit.UI import TaskDialog  # noqa
+from Autodesk.Revit.UI import TaskDialog
 from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, Level, RevitLinkInstance, UV, Transaction,  # noqa
                                FilteredWorksetCollector, WorksetKind, Phase, BuiltInParameter)
-from lite_logging import Logger  # noqa
-from main_window import MainWindow  # noqa
+from lite_logging import Logger
+from main_window import MainWindow
+from information_window import InformationWindow
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
                 default_status=Logger.WARNING)
-doc = __revit__.ActiveUIDocument.Document  # noqa
-transaction = Transaction(doc)  # noqa
+doc = __revit__.ActiveUIDocument.Document
+transaction = Transaction(doc)
 # __window__.Close()
 
 
@@ -186,7 +187,9 @@ def Main():
         mw.ShowDialog()
     else:
         logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
-        TaskDialog.Show('Error', 'There is no "Model Spaces" workset in the Current model. Please create it and relaunch the Addin.')        
+        message = 'There is no "Model Spaces" workset in the Current model. Please create it and relaunch the Addin.'
+        information_window = InformationWindow('Error', message)
+        information_window.ShowDialog()        
 
 
 if __name__ == '__main__':

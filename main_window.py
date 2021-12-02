@@ -7,9 +7,9 @@ from System.Windows.Forms import (Button, StatusBar, Form, ListView, StatusBar, 
                                   FormBorderStyle, GroupBox, ComboBox)
 from System.Drawing import Point, Size, Rectangle
 from Autodesk.Revit.DB import Transaction, TransactionStatus
-from Autodesk.Revit.UI import TaskDialog
 from lite_logging import Logger
 from creation_window import CreationWindow
+from information_window import InformationWindow
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
@@ -166,7 +166,9 @@ class MainWindow(Form):
 
     def _click_btn_delete_all(self, sender, e):
         if len(self.combobox_phase.Items) == 0:
-            TaskDialog.Show('Warning', '\nNo Spaces in the current model')
+            message = 'There are no Spaces in the Current model.'
+            information_window = InformationWindow('Information', message)
+            information_window.ShowDialog() 
             return
         with Transaction(self.doc) as t:
             t.Start('Delete All Spaces')
@@ -176,9 +178,10 @@ class MainWindow(Form):
                 self.spaces_by_phase_dct = {}
                 self.combobox_phase.Items.Clear()
 
-                msg = '\nTotal "{}" Spaces have been deleted\nin "{}" model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
                 logger.write_log('Spaces Deleted: {}'.format(deleleted_counter), Logger.INFO)
-                TaskDialog.Show('Report', msg)
+                message = 'Total "{}" Spaces have been deleted\nin "{}" model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
+                information_window = InformationWindow('Report', message)
+                information_window.ShowDialog() 
 
     def _click_btn_delete_selected(self, sender, e):
         selected_item = self.combobox_phase.SelectedItem
@@ -192,13 +195,17 @@ class MainWindow(Form):
                     self.spaces_by_phase_dct.pop(phase_name)
                     self.combobox_phase.Items.Remove(selected_item)
 
-                    msg = '\nTotal "{}" Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name)
                     logger.write_log('Spaces Deleted: {}'.format(deleted_counter), Logger.INFO)
-                    TaskDialog.Show('Report', msg)
+                    message = 'Total "{}" Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name)
+                    information_window = InformationWindow('Report', message)
+                    information_window.ShowDialog() 
         else:
-            TaskDialog.Show('Error', '\nPhase is not selected in the Current model.')
+            message = 'Phase is not selected in the Current model.'
+            information_window = InformationWindow('Error', message)
+            information_window.ShowDialog()
 
     def _changed_combobox_link_selection(self, sender, e):
+        self.combobox_link_phase.SelectedIndex = -1
         selected_link_item = self.combobox_link.SelectedItem
         if selected_link_item:
             link_name = selected_link_item.split(' - ')[1]
@@ -209,7 +216,9 @@ class MainWindow(Form):
                 item = '{} Rooms - {}'.format(room_number, phase_name)
                 self.combobox_link_phase.Items.Add(item)                
         else:
-            TaskDialog.Show('Error', '\nLink is not selected for analize.')
+            message = 'Link is not selected for analize.'
+            information_window = InformationWindow('Error', message)
+            information_window.ShowDialog()
 
     def _click_btn_create_selected(self, sender, e):
         selected_link_item = self.combobox_link.SelectedItem
@@ -222,13 +231,12 @@ class MainWindow(Form):
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
 
-            cw = CreationWindow()
-            cw.ShowDialog()
-
-            # for room in sorted_rooms.values():
-            #     space = self._create_space_by_room_instance(room)
+            creation_window = CreationWindow(self.doc, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
+            creation_window.ShowDialog()
         else:
-            TaskDialog.Show('Error', '\nPhase is not selected in the Linked model.')
+            message = 'Phase is not selected in the Linked model.'
+            information_window = InformationWindow('Error', message)
+            information_window.ShowDialog()
 
     def _fill_list_view(self):
         row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
