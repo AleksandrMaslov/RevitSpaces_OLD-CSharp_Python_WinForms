@@ -87,7 +87,7 @@ class MainWindow(Form):
         self.button_length = 25
         self.button_width_large = 120 
         self.button_offset = 22
-        self.button_location_current_Y = self.groupbox_current_length - self.button_length - 9.5
+        self.button_location_current_Y = self.groupbox_current_length - self.button_length - 8
         self.button_location_linked_Y = self.groupbox_offset_top + 33 + self.button_length
     
         btn_help = Button()
