@@ -39,44 +39,24 @@ class MainWindow(Form):
         self.ShowIcon = False
         self.FormBorderStyle = FormBorderStyle.FixedToolWindow
 
-        # listview
-        self.list_view_width = self.form_width - 35
-        self.list_column_width_verification = (self.list_view_width - 3) * 0.6
-        self.list_column_width_status = (self.list_view_width - 3) * 0.4
-        self.list_view_length = 110
-        self.list_offset_left = 3
-        self.list_offset_top = 3
-
-        self.list_view = ListView()
-        self.list_view.Bounds = Rectangle(Point(self.list_offset_left, self.list_offset_top), Size(self.list_view_width, self.list_view_length))
-        self.list_view.View = View.Details
-        self.list_view.AllowColumnReorder = True
-        self.list_view.FullRowSelect = True
-        self.list_view.GridLines = True
-        self.list_view.Sorting = SortOrder.Ascending
-        self.list_view.GridLines = True
-        self.list_view.TabIndex = 0
-        self.list_view.Columns.Add('Verification', self.list_column_width_verification, HorizontalAlignment.Center)
-        self.list_view.Columns.Add('Status', self.list_column_width_status, HorizontalAlignment.Center)
-        self.Controls.Add(self.list_view)
-
         # groupboxes
+        self.form_offset_left = 9
         self.groupbox_offset_left = 5
         self.groupbox_offset_top = 18
-        self.groupbox_width = self.list_view_width - 1
-        self.groupbox_current_location_Y = self.list_view_length + 35
+        self.groupbox_width = self.form_width - 36
+        self.groupbox_current_location_Y = 15
         self.groupbox_current_length = 70
         self.groupbox_linked_length = 95
         self.groupbox_linked_location_Y = self.groupbox_current_location_Y + self.groupbox_current_length + 10
 
         self.groupbox_current = GroupBox()
-        self.groupbox_current.Location = Point(self.list_offset_left, self.groupbox_current_location_Y)
+        self.groupbox_current.Location = Point(self.form_offset_left, self.groupbox_current_location_Y)
         self.groupbox_current.Text = "Current Model Spaces by Phase"
         self.groupbox_current.Size = Size(self.groupbox_width, self.groupbox_current_length)
         self.Controls.Add(self.groupbox_current)
 
         self.groupbox_linked = GroupBox()
-        self.groupbox_linked.Location = Point(self.list_offset_left, self.groupbox_linked_location_Y)
+        self.groupbox_linked.Location = Point(self.form_offset_left, self.groupbox_linked_location_Y)
         self.groupbox_linked.Text = "Linked Model"
         self.groupbox_linked.Size = Size(self.groupbox_width, self.groupbox_linked_length)
         self.Controls.Add(self.groupbox_linked)
@@ -110,19 +90,12 @@ class MainWindow(Form):
         self.button_offset = 22
         self.button_location_current_Y = self.groupbox_current_length - self.button_length - 6
         self.button_location_linked_Y = self.groupbox_linked_length - self.button_length - 6
-
-        btn_errors = Button()
-        btn_errors.Text = 'Errors'
-        btn_errors.Parent = self
-        btn_errors.Size = Size(self.button_width, self.button_length)
-        btn_errors.Location = Point(self.list_offset_left, self.list_view_length + 5)
-        # btn_report.Click += self._is_click_btn1
     
         btn_help = Button()
         btn_help.Text = 'Help'
         btn_help.Parent = self
         btn_help.Size = Size(self.button_width, self.button_length)
-        btn_help.Location = Point(self.list_offset_left + self.button_width + 2, self.list_view_length + 5)
+        btn_help.Location = Point(self.form_offset_left + self.button_width + 2, self.groupbox_linked_location_Y + self.groupbox_linked_length + 5)
         # btn_report.Click += self._is_click_btn1
 
         btn_delete_all = Button()
@@ -160,7 +133,6 @@ class MainWindow(Form):
         self.Load += self._load_window
 
     def _load_window(self, sender, e):
-        self._fill_list_view()
         self._fill_combobox_phase()
         self._fill_combobox_link()
 
@@ -237,15 +209,6 @@ class MainWindow(Form):
             message = 'Phase is not selected in the Linked model.'
             information_window = InformationWindow('Error', message)
             information_window.ShowDialog()
-
-    def _fill_list_view(self):
-        row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
-        statuses = ['Not Verified', 'VERIFIED', 'Verified']
-        for index, row_name in enumerate(row_names):
-            item = ListViewItem(row_name)
-            item.UseItemStyleForSubItems = True
-            self.list_view.Items.Add(item)
-            item.SubItems.Add(statuses[index])
 
     def _fill_combobox_phase(self):
         for phase_name, spaces in self.spaces_by_phase_dct.items():
