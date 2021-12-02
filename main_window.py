@@ -9,12 +9,11 @@ from System.Drawing import Point, Size, Rectangle
 from Autodesk.Revit.DB import Transaction, TransactionStatus
 from Autodesk.Revit.UI import TaskDialog
 from lite_logging import Logger
+from creation_window import CreationWindow
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
                 default_status=Logger.WARNING)
-doc = __revit__.ActiveUIDocument.Document
-transaction = Transaction(doc)
 
 # ADD CURRENT VIEW PHASE LABEL
 # ADD INFORMATION FORM BEFORE SPACES CREATION
@@ -169,7 +168,7 @@ class MainWindow(Form):
         if len(self.combobox_phase.Items) == 0:
             TaskDialog.Show('Warning', '\nNo Spaces in the current model')
             return
-        with Transaction(doc) as t:
+        with Transaction(self.doc) as t:
             t.Start('Delete All Spaces')
             deleleted_counter, phases_counter, phases_list = self._delete_all_spaces()
             t.Commit()
@@ -185,7 +184,7 @@ class MainWindow(Form):
         selected_item = self.combobox_phase.SelectedItem
         if selected_item:
             phase_name = selected_item.split(' - ', 1)[1]
-            with Transaction(doc) as t:
+            with Transaction(self.doc) as t:
                 t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
                 deleted_counter = self._delete_spaces_by_phase_name(phase_name)
                 t.Commit()
@@ -221,7 +220,10 @@ class MainWindow(Form):
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
 
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
-            sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
+            rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
+
+            cw = CreationWindow()
+            cw.ShowDialog()
 
             # for room in sorted_rooms.values():
             #     space = self._create_space_by_room_instance(room)
