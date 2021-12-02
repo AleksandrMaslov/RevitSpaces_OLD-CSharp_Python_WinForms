@@ -18,15 +18,15 @@ transaction = Transaction(doc)
 
 # ADD CURRENT VIEW PHASE LABEL
 # ADD INFORMATION FORM BEFORE SPACES CREATION
+# ADD LOGGING
 
 class MainWindow(Form):
-    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, levels_by_link_and_phase):
+    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
         self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
         self.workset_spaces_id = workset_spaces_id
         self.current_levels = current_levels
-        self.levels_by_link_and_phase = levels_by_link_and_phase
         self._initialize_components()
 
     def _initialize_components(self):
@@ -219,10 +219,14 @@ class MainWindow(Form):
             link_name = selected_link_item.split(' - ', 1)[1]
             phase_name = selected_link_phase_item.split(' - ', 1)[1]
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
-            for room in link_rooms_from_phase.values():
-                space = self._create_space_by_room_instance(room)
+
+            rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
+            sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
+
+            # for room in sorted_rooms.values():
+            #     space = self._create_space_by_room_instance(room)
         else:
-            TaskDialog.Show('Error', '\nPhase is not selected in the Linked model.')           
+            TaskDialog.Show('Error', '\nPhase is not selected in the Linked model.')
 
     def _fill_list_view(self):
         row_names = ['Phase Matching', 'Levels Matching', 'Workset Model Spaces']
@@ -266,8 +270,45 @@ class MainWindow(Form):
             deleted_counter += 1 
         return deleted_counter
 
+    def _analize_rooms_by_area_and_level(self, rooms_by_phase_dct):
+        sorted_rooms = {'total': 0}
+        rooms_area_incorrect = {'total': 0}
+        rooms_level_is_missing = {'total': 0, 'names': []}
+        rooms_level_incorrect = {'total': 0, 'names': []}
+
+        for phase_name, rooms in rooms_by_phase_dct.items():
+            for room_id, room in rooms.items():
+                if phase_name not in sorted_rooms:
+                    sorted_rooms[phase_name] = {}
+                    rooms_area_incorrect[phase_name] = {}
+
+                room_area = room.Area
+                room_level = room.Level
+                room_level_name = room_level.Name
+                room_level_elevation = room_level.ProjectElevation
+ 
+                if room_area == 0:
+                    rooms_area_incorrect['total'] += 1
+                    rooms_area_incorrect[phase_name].update({room_id: room})
+                elif room_level_name not in self.current_levels:
+                    rooms_level_is_missing['total'] += 1
+                    if room_level_name not in rooms_level_is_missing['names']:
+                        rooms_level_is_missing['names'].append(room_level_name)
+                elif room_level_elevation != self.current_levels[room_level_name]['elevation']:
+                    rooms_level_incorrect['total'] += 1
+                    if room_level_name not in rooms_level_incorrect['names']:
+                        rooms_level_incorrect['names'].append(room_level_name)
+                else:
+                    sorted_rooms['total'] += 1
+                    sorted_rooms[phase_name].update({room_id: room})
+
+        # DEBUG
+        # print '{} {} {} {}'.format(rooms_area_incorrect['total'], rooms_level_is_missing['total'], rooms_level_incorrect['total'], sorted_rooms['total'])
+        return rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms
+
     def _create_space_by_room_instance(self, room):
-        print room
+        pass
+        # print room
 
 
 if __name__ == '__main__':

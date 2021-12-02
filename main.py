@@ -77,21 +77,6 @@ def _create_rooms_by_link_and_phase_dct(current_links):
     return dct
 
 
-def _create_levels_by_link_and_phase_dct(current_links):
-    dct = {}
-    for link_name, link_doc in current_links.items():
-        if link_name not in dct:
-            dct[link_name] = {}
-        fec = FilteredElementCollector(link_doc).OfCategory(BuiltInCategory.OST_Levels).WhereElementIsNotElementType().ToElements()
-        for level in fec:
-            level_name = level.Name
-            if level_name not in dct[link_name]:
-                dct[link_name][level_name] = {}
-            dct[link_name][level_name].update({'instance': level,
-                                               'elevation': level.ProjectElevation})
-    return dct
-
-
 def create_new_instance():
     ws_id = workset_spaces()
     link_inst = FilteredElementCollector(doc).OfClass(RevitLinkInstance).ToElements()
@@ -196,9 +181,8 @@ def Main():
         current_links = _create_link_document_name_dct(doc)
         current_spaces_by_phase = _create_spaces_by_phase_dct(doc)
         rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(current_links)
-        levels_by_link_and_phase = _create_levels_by_link_and_phase_dct(current_links)
 
-        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, levels_by_link_and_phase)
+        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels)
         mw.ShowDialog()
     else:
         logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
