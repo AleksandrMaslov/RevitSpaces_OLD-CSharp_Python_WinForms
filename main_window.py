@@ -30,8 +30,8 @@ class MainWindow(Form):
     def _initialize_components(self):
         # window
         self.Text = 'Spaces Manager'
-        self.form_length = 430
         self.form_width = 320
+        self.form_length = 400
         self.MinimumSize = Size(self.form_width, self.form_length)
         self.Size = Size(self.form_width, self.form_length)
         self.CenterToScreen()
@@ -44,8 +44,8 @@ class MainWindow(Form):
         self.groupbox_offset_top = 18
         self.groupbox_width = self.form_width - 36
         self.groupbox_current_location_Y = 15
-        self.groupbox_current_length = 70
-        self.groupbox_linked_length = 95
+        self.groupbox_current_length = 80
+        self.groupbox_linked_length = 190
         self.groupbox_linked_location_Y = self.groupbox_current_location_Y + self.groupbox_current_length + 10
 
         self.groupbox_current = GroupBox()
@@ -83,18 +83,18 @@ class MainWindow(Form):
         self.combobox_link_phase.Size = Size(self.combobox_width, 0)
 
         # buttons
-        self.button_width = 50 
-        self.button_length = 20
-        self.button_width_large = 95 
+        self.button_width = 60 
+        self.button_length = 25
+        self.button_width_large = 120 
         self.button_offset = 22
-        self.button_location_current_Y = self.groupbox_current_length - self.button_length - 6
-        self.button_location_linked_Y = self.groupbox_linked_length - self.button_length - 6
+        self.button_location_current_Y = self.groupbox_current_length - self.button_length - 9.5
+        self.button_location_linked_Y = self.groupbox_offset_top + 33 + self.button_length
     
         btn_help = Button()
         btn_help.Text = 'Help'
         btn_help.Parent = self
         btn_help.Size = Size(self.button_width, self.button_length)
-        btn_help.Location = Point(self.form_offset_left + self.button_width + 2, self.groupbox_linked_location_Y + self.groupbox_linked_length + 5)
+        btn_help.Location = Point(self.form_offset_left, self.groupbox_linked_location_Y + self.groupbox_linked_length + 5)
         # btn_report.Click += self._is_click_btn1
 
         btn_delete_all = Button()
@@ -126,12 +126,15 @@ class MainWindow(Form):
         btn_create_selected.Click += self._click_btn_create_selected
 
         # label
-        self._label_current_phase = Label()
-        # self._label_current_phase.Location = Point(self.label_offset_left, self.label_offset_top)
-        # self._label_current_phase.Size = Size(self.label_size_width, self.label_size_length)
-        # self._label_current_phase.Text = self.message
+        self.label_location_linked_Y = self.button_location_linked_Y + self.button_length + 5
+        self.label_width = self.groupbox_width - self.groupbox_offset_left * 2
+
+        label_current_phase = Label()
+        label_current_phase.Parent = self.groupbox_linked
+        label_current_phase.Location = Point(self.groupbox_offset_left, self.label_location_linked_Y)
+        label_current_phase.Size = Size(self.label_width, 75)
+        label_current_phase.Text = 'New spaces Phase:\n{}\n\n* If you need to change the Phase close the addin and open definite view in your model.'.format(self.active_view_phase)
         # self._label_current_phase.Font = Font("Arial", 10, FontStyle.Regular)
-        self.Controls.Add(self._label_current_phase)
 
         #satusbar
         self.statusbar = StatusBar()
@@ -210,7 +213,7 @@ class MainWindow(Form):
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
 
-            creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
+            creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase)
             creation_window.ShowDialog()
         else:
             message = 'Phase is not selected in the Linked model.'

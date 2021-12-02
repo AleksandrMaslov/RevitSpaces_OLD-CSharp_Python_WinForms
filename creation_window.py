@@ -15,7 +15,7 @@ from lite_logging import Logger
 
 
 class CreationWindow(Form):
-    def __init__(self, doc, workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms):
+    def __init__(self, doc, workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, active_view_phase):
         self.title = 'Spaces Creation'
         self.message = 'message'
         self._initialize_components()
