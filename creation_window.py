@@ -2,7 +2,7 @@ import clr
 import math
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
-from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label)
+from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label, Button)
 from System.Drawing import Size, Point, Font, FontStyle
 from Autodesk.Revit.DB import Transaction, TransactionStatus
 from math import ceil
@@ -54,6 +54,27 @@ class CreationWindow(Form):
         self._label_message.Size = Size(self.label_size_width, self.label_size_length)
         self._label_message.Font = Font("Arial", 10, FontStyle.Regular)
         self.Controls.Add(self._label_message)
+
+        # buttons
+        self.button_width = 120 
+        self.button_length = 25
+        self.button_offset = 22
+        self.button_location_Y = self.form_length - self.button_length - 80
+
+        btn_continue = Button()
+        btn_continue.Text = 'Continue'
+        btn_continue.Size = Size(self.button_width, self.button_length)
+        btn_continue.Location = Point(self.label_offset_left, self.button_location_Y)
+        if self.sorted_rooms['total'] > 0:
+            self.Controls.Add(btn_continue)
+        # btn_continue.Click += self._click_btn_continue
+
+        btn_back = Button()
+        btn_back.Text = 'Back'
+        btn_back.Size = Size(self.button_width, self.button_length)
+        btn_back.Location = Point(self.form_width - self.button_width - self.label_offset_left * 2, self.button_location_Y)
+        self.Controls.Add(btn_back)
+        btn_back.Click += self._click_btn_back
    
         #satusbar
         self.statusbar = StatusBar()
@@ -125,6 +146,9 @@ class CreationWindow(Form):
             message_incorrect_levels = '- {} {} can not be created because of different Levels elevation in the Link and Current Model.\nPlease compare the elevation of the following Levels to solve the difference and create new Spaces correctly:\n{}'.format(incorrect_levels_total, phrase_begins, level_names)
             message += '{}\n'.format(message_incorrect_levels)  
         return message 
+
+    def _click_btn_back(self, sender, e):
+        self.Hide()
 
 
 if __name__ == '__main__':
