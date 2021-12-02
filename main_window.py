@@ -3,9 +3,8 @@ import os
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
 clr.AddReference('RevitAPIUI')
-from System.Windows.Forms import (Button, StatusBar, Form, ListView, StatusBar, ListViewItem, View, SortOrder, HorizontalAlignment,
-                                  FormBorderStyle, GroupBox, ComboBox)
-from System.Drawing import Point, Size, Rectangle
+from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorderStyle, GroupBox, ComboBox, Label)
+from System.Drawing import Point, Size
 from Autodesk.Revit.DB import Transaction, TransactionStatus
 from lite_logging import Logger
 from creation_window import CreationWindow
@@ -15,17 +14,17 @@ logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spac
                 file_name='test_log',
                 default_status=Logger.WARNING)
 
-# ADD CURRENT VIEW PHASE LABEL
-# ADD INFORMATION FORM BEFORE SPACES CREATION
 # ADD LOGGING
 
+
 class MainWindow(Form):
-    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels):
+    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
         self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
         self.workset_spaces_id = workset_spaces_id
         self.current_levels = current_levels
+        self.active_view_phase = active_view_phase
         self._initialize_components()
 
     def _initialize_components(self):
@@ -126,6 +125,14 @@ class MainWindow(Form):
         btn_create_selected.Parent = self.groupbox_linked
         btn_create_selected.Click += self._click_btn_create_selected
 
+        # label
+        self._label_current_phase = Label()
+        # self._label_current_phase.Location = Point(self.label_offset_left, self.label_offset_top)
+        # self._label_current_phase.Size = Size(self.label_size_width, self.label_size_length)
+        # self._label_current_phase.Text = self.message
+        # self._label_current_phase.Font = Font("Arial", 10, FontStyle.Regular)
+        self.Controls.Add(self._label_current_phase)
+
         #satusbar
         self.statusbar = StatusBar()
         self.statusbar.Parent = self
@@ -203,7 +210,7 @@ class MainWindow(Form):
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
 
-            creation_window = CreationWindow(self.doc, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
+            creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
             creation_window.ShowDialog()
         else:
             message = 'Phase is not selected in the Linked model.'

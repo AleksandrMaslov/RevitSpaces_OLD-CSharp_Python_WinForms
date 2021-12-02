@@ -18,6 +18,7 @@ logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spac
                 file_name='test_log',
                 default_status=Logger.WARNING)
 doc = __revit__.ActiveUIDocument.Document
+active_view = doc.ActiveView
 transaction = Transaction(doc)
 # __window__.Close()
 
@@ -182,8 +183,9 @@ def Main():
         current_links = _create_link_document_name_dct(doc)
         current_spaces_by_phase = _create_spaces_by_phase_dct(doc)
         rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(current_links)
+        active_view_phase = active_view.get_Parameter(BuiltInParameter.VIEW_PHASE).AsValueString()
 
-        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels)
+        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase)
         mw.ShowDialog()
     else:
         logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
