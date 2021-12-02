@@ -28,7 +28,7 @@ class InformationWindow(Form):
         self.label_offset_top = 15
         self.label_offset_left = 20
         self.label_size_width = self.form_width - self.label_offset_left * 2 - 5
-        self.label_row_length = 17
+        self.label_row_length = 18
         self.label_size_length = self._define_rows_number() * self.label_row_length
         if self.label_size_length > (self.form_length - 100):
             self.form_length = self.label_size_length + 60 + self.label_row_length * 2
