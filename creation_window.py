@@ -10,6 +10,7 @@ from Autodesk.Revit.DB import Transaction, TransactionStatus, UV, BuiltInParamet
 from Autodesk.Revit.UI import TaskDialog
 from math import ceil
 from lite_logging import Logger
+from information_window import InformationWindow
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
@@ -154,22 +155,38 @@ class CreationWindow(Form):
         self.Close()
 
     def _click_btn_continue(self, sender, e):
+        self.Close()
+        report_message = ''
         self.sorted_rooms.pop('total')
+        report_counter = []
         with Transaction(self.doc) as t:
-            t.Start('Create Selected Spaces')
+            t.Start('Create Spaces from selected Phase')
             for rooms in self.sorted_rooms.values():
                 for room in rooms.values():
-                    self._create_space_by_room_instance(room)
+                    result = self._create_space_by_room_instance(room)
+                    report_counter.append(result)
             self.doc.Regenerate()
             t.Commit()
-        msg = '\n\nREPORT:'
-        msg = msg + '\nSpaces Placed: {}'.format('X')
+
+        number_successful = report_counter.count('successful')
+        number_warnings = report_counter.count('warnings')
+        if number_successful > 0:
+            if number_successful == 1:
+                phrase = 'Space has'
+            else:
+                phrase = 'Spaces have'
+            report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
+        if number_warnings > 0:
+            if number_warnings == 1:
+                phrase = 'Space has'
+            else:
+                phrase = 'Spaces have'
+            report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
+
         log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
-        dialog = TaskDialog('INFORMATION')
-        dialog.MainInstruction = msg
-        dialog.MainContent = '<a href=\"{} \">'.format(log_link) + 'Open Logs folder</a>'
-        dialog.Show()
-        
+        information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
+        information_window.ShowDialog()
+  
     def _create_space_by_room_instance(self, room):
         room_location_point = room.Location.Point
         room_level_name = room.Level.Name
@@ -195,11 +212,12 @@ class CreationWindow(Form):
             space.get_Parameter(BuiltInParameter.ROOM_UPPER_LEVEL).Set(room_upper_limit_level_id)
             space.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM).Set(self.workset_spaces_id)
             space_phase_name = space.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
-
-            logger.write_log('Space {} {} have placed in phase - {}'.format(room_number, room_name, space_phase_name), Logger.INFO)
+            # DISCUSS. WHY EXCEPT BUT STILL CREATED? 
+            logger.write_log('Space "{} {}" have been placed in the phase - {}'.format(room_number, room_name, space_phase_name), Logger.INFO)
+            return 'successful'
         except Exception as e:
-            logger.write_log('Space Number: {} {}\n{}'.format(room_number, room_name, e), Logger.ERROR)
-            print 'error ', e
+            logger.write_log('Space "{} {}" error: {}'.format(room_number, room_name, e), Logger.ERROR)
+            return 'warnings'
         
 
 if __name__ == '__main__':
