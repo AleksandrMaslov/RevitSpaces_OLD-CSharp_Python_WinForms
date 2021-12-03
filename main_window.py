@@ -2,7 +2,6 @@ import clr
 import os
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
-clr.AddReference('RevitAPIUI')
 from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorderStyle, GroupBox, ComboBox, Label)
 from System.Drawing import Point, Size
 from Autodesk.Revit.DB import Transaction, TransactionStatus
@@ -13,8 +12,6 @@ from information_window import InformationWindow
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
                 default_status=Logger.WARNING)
-
-# ADD LOGGING
 
 
 class MainWindow(Form):
@@ -269,7 +266,13 @@ class MainWindow(Form):
                 room_level = room.Level
                 room_level_name = room_level.Name
                 room_level_elevation = room_level.ProjectElevation
- 
+                room_upper_limit = room.UpperLimit
+                if room_upper_limit:
+                    room_upper_limit_name = room_upper_limit.Name
+                    room_upper_limit_elevation = room_upper_limit.ProjectElevation
+                # else:
+                #     room_upper_limit_name = None
+
                 if room_area == 0:
                     rooms_area_incorrect['total'] += 1
                     rooms_area_incorrect[phase_name].update({room_id: room})
@@ -281,6 +284,14 @@ class MainWindow(Form):
                     rooms_level_incorrect['total'] += 1
                     if room_level_name not in rooms_level_incorrect['names']:
                         rooms_level_incorrect['names'].append(room_level_name)
+                elif (room_upper_limit) and (room_upper_limit_name not in self.current_levels):
+                    rooms_level_is_missing['total'] += 1
+                    if room_upper_limit_name not in rooms_level_is_missing['names']:
+                        rooms_level_is_missing['names'].append(room_upper_limit_name)                    
+                elif (room_upper_limit) and (room_upper_limit_elevation != self.current_levels[room_upper_limit_name]['elevation']):
+                    rooms_level_incorrect['total'] += 1
+                    if room_upper_limit_name not in rooms_level_incorrect['names']:
+                        rooms_level_incorrect['names'].append(room_upper_limit_name)
                 else:
                     sorted_rooms['total'] += 1
                     sorted_rooms[phase_name].update({room_id: room})
