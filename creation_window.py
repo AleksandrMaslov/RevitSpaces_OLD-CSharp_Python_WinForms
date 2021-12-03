@@ -160,7 +160,15 @@ class CreationWindow(Form):
             for rooms in self.sorted_rooms.values():
                 for room in rooms.values():
                     self._create_space_by_room_instance(room)
+            self.doc.Regenerate()
             t.Commit()
+        msg = '\n\nREPORT:'
+        msg = msg + '\nSpaces Placed: {}'.format('X')
+        log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
+        dialog = TaskDialog('INFORMATION')
+        dialog.MainInstruction = msg
+        dialog.MainContent = '<a href=\"{} \">'.format(log_link) + 'Open Logs folder</a>'
+        dialog.Show()
         
     def _create_space_by_room_instance(self, room):
         room_location_point = room.Location.Point
@@ -193,15 +201,6 @@ class CreationWindow(Form):
             logger.write_log('Space Number: {} {}\n{}'.format(room_number, room_name, e), Logger.ERROR)
             print 'error ', e
         
-        # msg = '\n\nREPORT:'
-        # msg = msg + '\nSpaces Placed: {}'.format('X')
-        # log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
-        # dialog = TaskDialog('INFORMATION')
-        # dialog.MainInstruction = msg
-        # dialog.MainContent = '<a href=\"{} \">'.format(log_link) + 'Open Logs folder</a>'
-        # dialog.Show()
-        # self.doc.Regenerate()
-
 
 if __name__ == '__main__':
     creation_window = CreationWindow('title', 'message')

@@ -26,7 +26,7 @@ def _find_workset_modelspaces_id(doc):
     fec = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
     for workset in fec:
         if workset.Name == 'Model Spaces':
-            workset_id = workset.Id#.IntegerValue
+            workset_id = workset.Id.IntegerValue
             return workset_id
 
 
