@@ -1,6 +1,6 @@
 import clr
 import math
-import subprocess
+import os
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
 from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label, LinkLabel)
@@ -70,7 +70,7 @@ class InformationWindow(Form):
         return rows_total
 
     def _click_label_link(self, sender, e):
-        subprocess.Popen(r'explorer /select,{}'.format(self.link))
+        os.startfile('{}'.format(self.link))
 
 
 if __name__ == '__main__':
