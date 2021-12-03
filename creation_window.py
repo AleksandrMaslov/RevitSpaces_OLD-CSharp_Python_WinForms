@@ -67,7 +67,7 @@ class CreationWindow(Form):
         btn_continue.Location = Point(self.label_offset_left, self.button_location_Y)
         if self.sorted_rooms['total'] > 0:
             self.Controls.Add(btn_continue)
-        # btn_continue.Click += self._click_btn_continue
+        btn_continue.Click += self._click_btn_continue
 
         btn_back = Button()
         btn_back.Text = 'Back'
@@ -115,7 +115,7 @@ class CreationWindow(Form):
             phase_names = ''
             for phase_name in self.rooms_area_incorrect.keys():
                 phase_names += '{}\n'.format(phase_name)
-            message_rooms_area_incorrect = '- {} {} can not be created because of incorrect Rooms placement in the selected Link model.\nThey can be "Not placed", "Not in a properly enclosed region" or they can be a "Redundant Room". Please send the request to the Architectural team to check Rooms in the following Phases of the Link model to solve this problem:\n{}'.format(rooms_area_incorrect_total, phrase_begins, phase_names)
+            message_rooms_area_incorrect = '- {} {} can not be created because of incorrect Rooms placement in the selected Link model.\nThey can be "Not placed", "Not in a properly enclosed region" or they can be a "Redundant Room". Please send the request to Architectural team to check Rooms in the following Phases of the Link model to solve this problem:\n{}'.format(rooms_area_incorrect_total, phrase_begins, phase_names)
             message += '{}\n'.format(message_rooms_area_incorrect)
 
         missing_levels_total = self.rooms_level_is_missing['total']
@@ -148,7 +148,17 @@ class CreationWindow(Form):
         return message 
 
     def _click_btn_back(self, sender, e):
-        self.Hide()
+        self.Close()
+        # DISCUSS<<<<< WHY SWITCHES TO WRONG WINDOW
+
+    def _click_btn_continue(self, sender, e):
+        self.sorted_rooms.pop('total')
+        for rooms in self.sorted_rooms.values():
+            for room in rooms.values():
+                self._create_space_by_room_instance(room)
+
+    def _create_space_by_room_instance(self, room):
+        print room.Id
 
 
 if __name__ == '__main__':
