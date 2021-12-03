@@ -7,9 +7,8 @@ import os
 sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
-from Autodesk.Revit.UI import TaskDialog
-from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, Level, RevitLinkInstance, UV, Transaction,  # noqa
-                               FilteredWorksetCollector, WorksetKind, Phase, BuiltInParameter)
+from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, Level, RevitLinkInstance, Transaction,
+                               FilteredWorksetCollector, WorksetKind, BuiltInParameter)
 from lite_logging import Logger
 from main_window import MainWindow
 from information_window import InformationWindow
@@ -27,7 +26,7 @@ def _find_workset_modelspaces_id(doc):
     fec = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
     for workset in fec:
         if workset.Name == 'Model Spaces':
-            workset_id = workset.Id.IntegerValue
+            workset_id = workset.Id#.IntegerValue
             return workset_id
 
 
