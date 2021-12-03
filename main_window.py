@@ -213,7 +213,7 @@ class MainWindow(Form):
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
 
-            creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase)
+            creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
             creation_window.ShowDialog()
         else:
             message = 'Phase is not selected in the Linked model.'
