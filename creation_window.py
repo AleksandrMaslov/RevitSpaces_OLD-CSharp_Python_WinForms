@@ -190,17 +190,17 @@ class CreationWindow(Form):
 
             logger.write_log('Space {} {} have placed in phase - {}'.format(room_number, room_name, space_phase_name), Logger.INFO)
         except Exception as e:
-            logger.write_log('Space Number: {}\n{}'.format(num, e), Logger.ERROR)
+            logger.write_log('Space Number: {} {}\n{}'.format(room_number, room_name, e), Logger.ERROR)
             print 'error ', e
         
-        msg = '\n\nREPORT:'
-        msg = msg + '\nSpaces Placed: {}'.format('X')
-        log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
-        dialog = TaskDialog('INFORMATION')
-        dialog.MainInstruction = msg
-        dialog.MainContent = '<a href=\"{} \">'.format(log_link) + 'Open Logs folder</a>'
-        dialog.Show()
-        self.doc.Regenerate()
+        # msg = '\n\nREPORT:'
+        # msg = msg + '\nSpaces Placed: {}'.format('X')
+        # log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
+        # dialog = TaskDialog('INFORMATION')
+        # dialog.MainInstruction = msg
+        # dialog.MainContent = '<a href=\"{} \">'.format(log_link) + 'Open Logs folder</a>'
+        # dialog.Show()
+        # self.doc.Regenerate()
 
 
 if __name__ == '__main__':
