@@ -1,16 +1,19 @@
 import clr
 import math
+import subprocess
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
-from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label)
+from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label, LinkLabel)
 from System.Drawing import Size, Point, Font, FontStyle
 from math import ceil
 
 
 class InformationWindow(Form):
-    def __init__(self, title, message):
+    def __init__(self, title, message, link = '', link_text = ''):
         self.title = title
         self.message = message
+        self.link = link
+        self.link_text = link_text
         self._initialize_components()
 
     def _initialize_components(self):
@@ -35,12 +38,22 @@ class InformationWindow(Form):
             self.MinimumSize = Size(self.form_width, self.form_length)
             self.Size = Size(self.form_width, self.form_length)
             self.CenterToScreen()
+        self._label_link_location_Y = self.form_length - 90
+
         self._label_message = Label()
         self._label_message.Location = Point(self.label_offset_left, self.label_offset_top)
         self._label_message.Size = Size(self.label_size_width, self.label_size_length)
         self._label_message.Text = self.message
         self._label_message.Font = Font("Arial", 10, FontStyle.Regular)
         self.Controls.Add(self._label_message)
+
+        self._label_link = LinkLabel()
+        self._label_link.Location = Point(self.label_offset_left, self._label_link_location_Y)
+        self._label_link.Size = Size(100, 18)
+        self._label_link.Text = self.link_text
+        # self._label_link.Font = Font("Arial", 10, FontStyle.Regular)
+        self.Controls.Add(self._label_link) 
+        self._label_link.LinkClicked += self._click_label_link      
    
         #satusbar
         self.statusbar = StatusBar()
@@ -55,6 +68,9 @@ class InformationWindow(Form):
                 additional_rows_number = ceil(phrase_length/ 95.0) - 1
             rows_total += additional_rows_number
         return rows_total
+
+    def _click_label_link(self, sender, e):
+        subprocess.Popen(r'explorer /select,{}'.format(self.link))
 
 
 if __name__ == '__main__':
