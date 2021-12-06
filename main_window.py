@@ -7,7 +7,7 @@ from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorder
 from System.Drawing import Point, Size
 from Autodesk.Revit.DB import Transaction, TransactionStatus, BuiltInParameter, UV
 from lite_logging import Logger
-from creation_window import CreationWindow
+from confirmation_window import ConfirmationWindow
 from information_window import InformationWindow
 
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
@@ -206,44 +206,17 @@ class MainWindow(Form):
             rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
             number_of_phases_with_spaces = len(rooms_by_phase_dct)
             if number_of_phases_with_spaces > 0:
+                window_title = 'Spaces Creation'
+                window_width = 600
                 rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
+                message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
 
-                creation_window = CreationWindow(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
+                creation_window = ConfirmationWindow(window_title, window_width, message, sorted_rooms['total'] > 0)
                 if creation_window.ShowDialog() == DialogResult.Cancel:
                     return
 
                 self.Close()
-                report_message = ''
-                sorted_rooms.pop('total')
-                report_counter = []
-                with Transaction(self.doc) as t:
-                    t.Start('Create All Spaces')
-                    for rooms in sorted_rooms.values():
-                        for room in rooms.values():
-                            result = self._create_space_by_room_instance(room)
-                            report_counter.append(result)
-                    self.doc.Regenerate()
-                    t.Commit()
-
-                    if t.GetStatus() == TransactionStatus.Committed:
-                        number_successful = report_counter.count('successful')
-                        number_warnings = report_counter.count('warnings')
-                        if number_successful > 0:
-                            if number_successful == 1:
-                                phrase = 'Space has'
-                            else:
-                                phrase = 'Spaces have'
-                            report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
-                        if number_warnings > 0:
-                            if number_warnings == 1:
-                                phrase = 'Space has'
-                            else:
-                                phrase = 'Spaces have'
-                            report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
-
-                        log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
-                        information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
-                        information_window.ShowDialog()
+                self._spaces_creation_by_sorted_rooms(sorted_rooms)
             else:
                 message = 'There are no Rooms in the selected Linked model.'
                 information_window = InformationWindow('Information', message)
@@ -257,48 +230,22 @@ class MainWindow(Form):
         selected_link_item = self.combobox_link.SelectedItem
         selected_link_phase_item = self.combobox_link_phase.SelectedItem
         if selected_link_item and selected_link_phase_item:
+            window_title = 'Spaces Creation'
+            window_width = 600
             link_name = selected_link_item.split(' - ', 1)[1]
             phase_name = selected_link_phase_item.split(' - ', 1)[1]
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
 
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
-            creation_window = CreationWindow(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
+            message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
+            
+            creation_window = ConfirmationWindow(window_title, window_width, message, sorted_rooms['total'] > 0)
             if creation_window.ShowDialog() == DialogResult.Cancel:
                 return
 
             self.Close()
-            report_message = ''
-            sorted_rooms.pop('total')
-            report_counter = []
-            with Transaction(self.doc) as t:
-                t.Start('Create Spaces from selected Phase')
-                for rooms in sorted_rooms.values():
-                    for room in rooms.values():
-                        result = self._create_space_by_room_instance(room)
-                        report_counter.append(result)
-                self.doc.Regenerate()
-                t.Commit()
-
-                if t.GetStatus() == TransactionStatus.Committed:
-                    number_successful = report_counter.count('successful')
-                    number_warnings = report_counter.count('warnings')
-                    if number_successful > 0:
-                        if number_successful == 1:
-                            phrase = 'Space has'
-                        else:
-                            phrase = 'Spaces have'
-                        report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
-                    if number_warnings > 0:
-                        if number_warnings == 1:
-                            phrase = 'Space has'
-                        else:
-                            phrase = 'Spaces have'
-                        report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
-
-                    log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
-                    information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
-                    information_window.ShowDialog()
+            self._spaces_creation_by_sorted_rooms(sorted_rooms)
         else:
             message = 'Phase is not selected in the Linked model.'
             information_window = InformationWindow('Error', message)
@@ -423,6 +370,96 @@ class MainWindow(Form):
         except Exception as e:
             logger.write_log('Space "{} {}" error: {}'.format(room_number, room_name, e), Logger.ERROR)
             return 'warnings'
+
+    def _define_creation_message(self, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms):
+        message = ''
+        warnings = 'WARNINGS (!)'
+
+        sorted_rooms_total = sorted_rooms['total']
+        if sorted_rooms_total > 0:
+            if sorted_rooms_total == 1:
+                phrase_begins = 'Space is'
+            else:
+                phrase_begins = 'Spaces are'
+            message_sorted_rooms = 'Total {} {} ready for creation in the "{}" Phase.'.format(sorted_rooms_total, phrase_begins, self.active_view_phase)
+            message += '{}\n\n'.format(message_sorted_rooms) 
+
+        rooms_area_incorrect_total = rooms_area_incorrect['total']
+        rooms_area_incorrect.pop('total')
+        if rooms_area_incorrect_total > 0:
+            if not warnings in message:
+                message += '{}\n'.format(warnings)
+            if rooms_area_incorrect_total == 1:
+                phrase_begins = 'Space'
+            else:
+                phrase_begins = 'Spaces'
+            phase_names = ''
+            for phase_name in rooms_area_incorrect.keys():
+                phase_names += '{}\n'.format(phase_name)
+            message_rooms_area_incorrect = '- {} {} can not be created because of incorrect Rooms placement in the selected Link model.\nThey can be "Not placed", "Not in a properly enclosed region" or they can be a "Redundant Room". Please send the request to Architectural team to check Rooms in the following Phases of the Link model to solve this problem:\n{}'.format(rooms_area_incorrect_total, phrase_begins, phase_names)
+            message += '{}\n'.format(message_rooms_area_incorrect)
+
+        missing_levels_total = rooms_level_is_missing['total']
+        if missing_levels_total > 0:
+            if not warnings in message:
+                message += '{}\n'.format(warnings)
+            if missing_levels_total == 1:
+                phrase_begins = 'Space'
+            else:
+                phrase_begins = 'Spaces'
+            level_names = ''
+            for level_name in rooms_level_is_missing['names']:
+                level_names += '{}\n'.format(level_name)
+            message_missing_levels = '- {} {} can not be created because of missing Levels in the Current model.\nPlease add the following levels with the same elvation to the Current Model to create new Spaces correctly:\n{}'.format(missing_levels_total, phrase_begins, level_names)
+            message += '{}\n'.format(message_missing_levels)
+
+        incorrect_levels_total = rooms_level_incorrect['total']
+        if incorrect_levels_total > 0:
+            if not warnings in message:
+                message += '{}\n'.format(warnings)
+            if incorrect_levels_total == 1:
+                phrase_begins = 'Space'
+            else:
+                phrase_begins = 'Spaces'
+            level_names = ''
+            for level_name in rooms_level_incorrect['names']:
+                level_names += '{}\n'.format(level_name)
+            message_incorrect_levels = '- {} {} can not be created because of different Levels elevation in the Link and Current Model.\nPlease compare the elevation of the following Levels to solve the difference and create new Spaces correctly:\n{}'.format(incorrect_levels_total, phrase_begins, level_names)
+            message += '{}\n'.format(message_incorrect_levels)  
+        return message 
+
+    def _spaces_creation_by_sorted_rooms(self, sorted_rooms):
+        report_message = ''
+        sorted_rooms.pop('total')
+        report_counter = []
+        with Transaction(self.doc) as t:
+            t.Start('Create Spaces from selected Phase')
+            for rooms in sorted_rooms.values():
+                for room in rooms.values():
+                    result = self._create_space_by_room_instance(room)
+                    report_counter.append(result)
+            self.doc.Regenerate()
+            t.Commit()
+
+            if t.GetStatus() == TransactionStatus.Committed:
+                number_successful = report_counter.count('successful')
+                number_warnings = report_counter.count('warnings')
+                if number_successful > 0:
+                    if number_successful == 1:
+                        phrase = 'Space has'
+                    else:
+                        phrase = 'Spaces have'
+                    report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
+                if number_warnings > 0:
+                    if number_warnings == 1:
+                        phrase = 'Space has'
+                    else:
+                        phrase = 'Spaces have'
+                    report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
+
+                log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
+                information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
+                information_window.ShowDialog()       
 
 
 if __name__ == '__main__':
