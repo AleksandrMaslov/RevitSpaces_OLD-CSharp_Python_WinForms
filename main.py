@@ -97,4 +97,4 @@ def Main():
         information_window.ShowDialog()        
 
 
-    Main()
+Main()
