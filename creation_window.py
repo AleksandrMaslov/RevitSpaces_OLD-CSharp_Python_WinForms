@@ -4,7 +4,7 @@ import math
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
 clr.AddReference('RevitAPIUI')
-from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label, Button)
+from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label, Button, DialogResult)
 from System.Drawing import Size, Point, Font, FontStyle
 from Autodesk.Revit.DB import Transaction, TransactionStatus, UV, BuiltInParameter
 from Autodesk.Revit.UI import TaskDialog
@@ -16,11 +16,13 @@ logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spac
                 file_name='test_log',
                 default_status=Logger.WARNING)
 
+# TODO: Add Delete All Warning
+# TODO: addin name Space Room Creator
+# TODO: checkboxes for Delete
+
 
 class CreationWindow(Form):
-    def __init__(self, doc, workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, active_view_phase, current_levels):
-        self.doc = doc
-        self.workset_spaces_id = workset_spaces_id
+    def __init__(self, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, active_view_phase, current_levels):
         self.current_levels = current_levels
         self.rooms_area_incorrect = rooms_area_incorrect
         self.rooms_level_is_missing = rooms_level_is_missing
@@ -152,73 +154,13 @@ class CreationWindow(Form):
         return message 
 
     def _click_btn_back(self, sender, e):
+        self.DialogResult = DialogResult.Cancel
         self.Close()
 
     def _click_btn_continue(self, sender, e):
+        self.DialogResult = DialogResult.OK
         self.Close()
-        report_message = ''
-        self.sorted_rooms.pop('total')
-        report_counter = []
-        with Transaction(self.doc) as t:
-            t.Start('Create Spaces from selected Phase')
-            for rooms in self.sorted_rooms.values():
-                for room in rooms.values():
-                    result = self._create_space_by_room_instance(room)
-                    report_counter.append(result)
-            self.doc.Regenerate()
-            t.Commit()
-
-        number_successful = report_counter.count('successful')
-        number_warnings = report_counter.count('warnings')
-        if number_successful > 0:
-            if number_successful == 1:
-                phrase = 'Space has'
-            else:
-                phrase = 'Spaces have'
-            report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
-        if number_warnings > 0:
-            if number_warnings == 1:
-                phrase = 'Space has'
-            else:
-                phrase = 'Spaces have'
-            report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
-
-        log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
-        information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
-        information_window.ShowDialog()
-  
-    def _create_space_by_room_instance(self, room):
-        room_location_point = room.Location.Point
-        room_level_name = room.Level.Name
-        space_level = self.current_levels[room_level_name]['instance']
-        room_base_offset = room.BaseOffset
-        room_limit_offset = room.LimitOffset
-        room_number = room.Number
-        room_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString()
-        room_upper_limit = room.UpperLimit
-        if room_upper_limit:
-            room_upper_limit_name = room_upper_limit.Name
-            room_upper_limit = self.current_levels[room_upper_limit_name]['instance']
-            room_upper_limit_level_id = room_upper_limit.Id #Level ID 
-        else:
-            room_upper_limit_level_id = space_level.Id
-
-        try:
-            space = self.doc.Create.NewSpace(space_level, UV(room_location_point.X, room_location_point.Y))
-            space.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(room_number)
-            space.get_Parameter(BuiltInParameter.ROOM_NAME).Set(room_name)
-            space.get_Parameter(BuiltInParameter.ROOM_LOWER_OFFSET).Set(room_base_offset)
-            space.get_Parameter(BuiltInParameter.ROOM_UPPER_OFFSET).Set(room_limit_offset)
-            space.get_Parameter(BuiltInParameter.ROOM_UPPER_LEVEL).Set(room_upper_limit_level_id)
-            space.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM).Set(self.workset_spaces_id)
-            space_phase_name = space.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
-            # DISCUSS. WHY EXCEPT BUT STILL CREATED? 
-            logger.write_log('Space "{} {}" have been placed in the phase - {}'.format(room_number, room_name, space_phase_name), Logger.INFO)
-            return 'successful'
-        except Exception as e:
-            logger.write_log('Space "{} {}" error: {}'.format(room_number, room_name, e), Logger.ERROR)
-            return 'warnings'
-        
+         
 
 if __name__ == '__main__':
     creation_window = CreationWindow('title', 'message')

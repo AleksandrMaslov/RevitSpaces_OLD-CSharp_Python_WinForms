@@ -1,10 +1,11 @@
+# coding: utf-8
 import clr
 import os
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
-from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorderStyle, GroupBox, ComboBox, Label)
+from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorderStyle, GroupBox, ComboBox, Label, DialogResult)
 from System.Drawing import Point, Size
-from Autodesk.Revit.DB import Transaction, TransactionStatus
+from Autodesk.Revit.DB import Transaction, TransactionStatus, BuiltInParameter, UV
 from lite_logging import Logger
 from creation_window import CreationWindow
 from information_window import InformationWindow
@@ -92,7 +93,7 @@ class MainWindow(Form):
         btn_help.Parent = self
         btn_help.Size = Size(self.button_width, self.button_length)
         btn_help.Location = Point(self.form_offset_left, self.groupbox_linked_location_Y + self.groupbox_linked_length + 5)
-        # btn_report.Click += self._is_click_btn1
+        btn_help.Click += self._click_btn_help
 
         btn_delete_all = Button()
         btn_delete_all.Text = 'Delete All'
@@ -206,8 +207,43 @@ class MainWindow(Form):
             number_of_phases_with_spaces = len(rooms_by_phase_dct)
             if number_of_phases_with_spaces > 0:
                 rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
-                creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
-                creation_window.ShowDialog()
+
+                creation_window = CreationWindow(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
+                if creation_window.ShowDialog() == DialogResult.Cancel:
+                    return
+
+                self.Close()
+                report_message = ''
+                sorted_rooms.pop('total')
+                report_counter = []
+                with Transaction(self.doc) as t:
+                    t.Start('Create All Spaces')
+                    for rooms in sorted_rooms.values():
+                        for room in rooms.values():
+                            result = self._create_space_by_room_instance(room)
+                            report_counter.append(result)
+                    self.doc.Regenerate()
+                    t.Commit()
+
+                    if t.GetStatus() == TransactionStatus.Committed:
+                        number_successful = report_counter.count('successful')
+                        number_warnings = report_counter.count('warnings')
+                        if number_successful > 0:
+                            if number_successful == 1:
+                                phrase = 'Space has'
+                            else:
+                                phrase = 'Spaces have'
+                            report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
+                        if number_warnings > 0:
+                            if number_warnings == 1:
+                                phrase = 'Space has'
+                            else:
+                                phrase = 'Spaces have'
+                            report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
+
+                        log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
+                        information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
+                        information_window.ShowDialog()
             else:
                 message = 'There are no Rooms in the selected Linked model.'
                 information_window = InformationWindow('Information', message)
@@ -223,12 +259,54 @@ class MainWindow(Form):
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
 
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
-            creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
-            creation_window.ShowDialog()
+            creation_window = CreationWindow(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
+            if creation_window.ShowDialog() == DialogResult.Cancel:
+                return
+
+            self.Close()
+            report_message = ''
+            sorted_rooms.pop('total')
+            report_counter = []
+            with Transaction(self.doc) as t:
+                t.Start('Create Spaces from selected Phase')
+                for rooms in sorted_rooms.values():
+                    for room in rooms.values():
+                        result = self._create_space_by_room_instance(room)
+                        report_counter.append(result)
+                self.doc.Regenerate()
+                t.Commit()
+
+                if t.GetStatus() == TransactionStatus.Committed:
+                    number_successful = report_counter.count('successful')
+                    number_warnings = report_counter.count('warnings')
+                    if number_successful > 0:
+                        if number_successful == 1:
+                            phrase = 'Space has'
+                        else:
+                            phrase = 'Spaces have'
+                        report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
+                    if number_warnings > 0:
+                        if number_warnings == 1:
+                            phrase = 'Space has'
+                        else:
+                            phrase = 'Spaces have'
+                        report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
+
+                    log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
+                    information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
+                    information_window.ShowDialog()
         else:
             message = 'Phase is not selected in the Linked model.'
             information_window = InformationWindow('Error', message)
             information_window.ShowDialog()
+
+    def _click_btn_help(self, sender, e):
+        message = '"Create Spaces from Linked Rooms" addin is able to manage the deletion of existing Spaces in the Current model and create new Spaces in the Current model similar to Rooms in the selected Link model or exact Phase in the selected Linked model.\n\n' \
+        'Upper box allows to check how many Spaces are available in the exact model Phase in the currently opened model. You are able to choose specific Phase to delete Spaces by "Delete Selected" button or you can delete all Spaces in the Current model using "Delete All" button. After that you will get the report about number of deleted Spaces and Phase names.\n\n' \
+        'Lower box allows to check how many Rooms are available in the selected Linked model and how many Rooms are available in the special Phase of the Linked model that you select. You are able to choose specific Linked model to create new Spaces in the Current model similar to all available Rooms ("Create All" button) or you can select the exact Linked model Phase to create new Spaces according to this selected Phase ("Create Selected" button). After one of "Create" button you will see.\n'
+
+        information_window = InformationWindow('Help', message)
+        information_window.ShowDialog()
 
     def _fill_combobox_phase(self):
         for phase_name, spaces in self.spaces_by_phase_dct.items():
@@ -309,6 +387,38 @@ class MainWindow(Form):
         # DEBUG
         # print '{} {} {} {}'.format(rooms_area_incorrect['total'], rooms_level_is_missing['total'], rooms_level_incorrect['total'], sorted_rooms['total'])
         return rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms
+
+    def _create_space_by_room_instance(self, room):
+        room_location_point = room.Location.Point
+        room_level_name = room.Level.Name
+        space_level = self.current_levels[room_level_name]['instance']
+        room_base_offset = room.BaseOffset
+        room_limit_offset = room.LimitOffset
+        room_number = room.Number
+        room_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString()
+        room_upper_limit = room.UpperLimit
+        if room_upper_limit:
+            room_upper_limit_name = room_upper_limit.Name
+            room_upper_limit = self.current_levels[room_upper_limit_name]['instance']
+            room_upper_limit_level_id = room_upper_limit.Id #Level ID 
+        else:
+            room_upper_limit_level_id = space_level.Id
+
+        try:
+            space = self.doc.Create.NewSpace(space_level, UV(room_location_point.X, room_location_point.Y))
+            space.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(room_number)
+            space.get_Parameter(BuiltInParameter.ROOM_NAME).Set(room_name)
+            space.get_Parameter(BuiltInParameter.ROOM_LOWER_OFFSET).Set(room_base_offset)
+            space.get_Parameter(BuiltInParameter.ROOM_UPPER_OFFSET).Set(room_limit_offset)
+            space.get_Parameter(BuiltInParameter.ROOM_UPPER_LEVEL).Set(room_upper_limit_level_id)
+            space.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM).Set(self.workset_spaces_id)
+            space_phase_name = space.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
+
+            logger.write_log('Space "{} {}" have been placed in the phase - {}'.format(room_number, room_name, space_phase_name), Logger.INFO)
+            return 'successful'
+        except Exception as e:
+            logger.write_log('Space "{} {}" error: {}'.format(room_number, room_name, e), Logger.ERROR)
+            return 'warnings'
 
 
 if __name__ == '__main__':
