@@ -113,7 +113,7 @@ class MainWindow(Form):
         btn_create_all.Size = Size(self.button_width_large, self.button_length)
         btn_create_all.Location = Point(self.groupbox_offset_left, self.button_location_linked_Y)
         btn_create_all.Parent = self.groupbox_linked
-        # btn_report.Click += self._is_click_btn1
+        btn_create_all.Click += self._click_btn_create_all
 
         btn_create_selected = Button()
         btn_create_selected.Text = 'Create Selected'
@@ -131,7 +131,6 @@ class MainWindow(Form):
         label_current_phase.Location = Point(self.groupbox_offset_left, self.label_location_linked_Y)
         label_current_phase.Size = Size(self.label_width, 75)
         label_current_phase.Text = 'New spaces Phase:\n{}\n\n* If you need to change the Phase close the addin and open definite view in your model.'.format(self.active_view_phase)
-        # self._label_current_phase.Font = Font("Arial", 10, FontStyle.Regular)
 
         #satusbar
         self.statusbar = StatusBar()
@@ -198,6 +197,21 @@ class MainWindow(Form):
             message = 'Link is not selected for analize.'
             information_window = InformationWindow('Error', message)
             information_window.ShowDialog()
+
+    def _click_btn_create_all(self, sender, e):
+        selected_link_item = self.combobox_link.SelectedItem
+        if selected_link_item:
+            link_name = selected_link_item.split(' - ', 1)[1]
+            rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
+            number_of_phases_with_spaces = len(rooms_by_phase_dct)
+            if number_of_phases_with_spaces > 0:
+                rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
+                creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
+                creation_window.ShowDialog()
+            else:
+                message = 'There are no Rooms in the selected Linked model.'
+                information_window = InformationWindow('Information', message)
+                information_window.ShowDialog()               
 
     def _click_btn_create_selected(self, sender, e):
         selected_link_item = self.combobox_link.SelectedItem
