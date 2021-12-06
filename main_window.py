@@ -157,8 +157,8 @@ class MainWindow(Form):
                 self.spaces_by_phase_dct = {}
                 self.combobox_phase.Items.Clear()
 
-                logger.write_log('Spaces Deleted: {}'.format(deleleted_counter), Logger.INFO)
-                message = 'Total "{}" Spaces have been deleted\nin "{}" model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
+                logger.write_log('{} Spaces have been deleted\nin {} model Phases:\n{}'.format(deleleted_counter, phases_counter, phases_list), Logger.INFO)
+                message = 'Total {} Spaces have been deleted\nin {} model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
                 information_window = InformationWindow('Report', message)
                 information_window.ShowDialog() 
 
@@ -174,8 +174,8 @@ class MainWindow(Form):
                     self.spaces_by_phase_dct.pop(phase_name)
                     self.combobox_phase.Items.Remove(selected_item)
 
-                    logger.write_log('Spaces Deleted: {}'.format(deleted_counter), Logger.INFO)
-                    message = 'Total "{}" Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name)
+                    logger.write_log('{} Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name), Logger.INFO)
+                    message = 'Total {} Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name)
                     information_window = InformationWindow('Report', message)
                     information_window.ShowDialog() 
         else:
@@ -206,10 +206,9 @@ class MainWindow(Form):
             link_name = selected_link_item.split(' - ', 1)[1]
             phase_name = selected_link_phase_item.split(' - ', 1)[1]
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
-
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
-            rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
 
+            rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
             creation_window = CreationWindow(self.doc, self.workset_spaces_id, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, self.active_view_phase, self.current_levels)
             creation_window.ShowDialog()
         else:
@@ -270,8 +269,6 @@ class MainWindow(Form):
                 if room_upper_limit:
                     room_upper_limit_name = room_upper_limit.Name
                     room_upper_limit_elevation = room_upper_limit.ProjectElevation
-                # else:
-                #     room_upper_limit_name = None
 
                 if room_area == 0:
                     rooms_area_incorrect['total'] += 1
@@ -295,7 +292,6 @@ class MainWindow(Form):
                 else:
                     sorted_rooms['total'] += 1
                     sorted_rooms[phase_name].update({room_id: room})
-
         # DEBUG
         # print '{} {} {} {}'.format(rooms_area_incorrect['total'], rooms_level_is_missing['total'], rooms_level_incorrect['total'], sorted_rooms['total'])
         return rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms
