@@ -208,6 +208,7 @@ class MainWindow(Form):
             if number_of_phases_with_spaces > 0:
                 window_title = 'Spaces Creation'
                 window_width = 600
+                transaction_name = 'Create All Spaces'
                 rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
                 message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
 
@@ -216,7 +217,7 @@ class MainWindow(Form):
                     return
 
                 self.Close()
-                self._spaces_creation_by_sorted_rooms(sorted_rooms)
+                self._spaces_creation_by_sorted_rooms(sorted_rooms, transaction_name)
             else:
                 message = 'There are no Rooms in the selected Linked model.'
                 information_window = InformationWindow('Information', message)
@@ -232,6 +233,7 @@ class MainWindow(Form):
         if selected_link_item and selected_link_phase_item:
             window_title = 'Spaces Creation'
             window_width = 600
+            transaction_name = 'Create Spaces from selected Phase'
             link_name = selected_link_item.split(' - ', 1)[1]
             phase_name = selected_link_phase_item.split(' - ', 1)[1]
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
@@ -245,7 +247,7 @@ class MainWindow(Form):
                 return
 
             self.Close()
-            self._spaces_creation_by_sorted_rooms(sorted_rooms)
+            self._spaces_creation_by_sorted_rooms(sorted_rooms, transaction_name)
         else:
             message = 'Phase is not selected in the Linked model.'
             information_window = InformationWindow('Error', message)
@@ -428,12 +430,12 @@ class MainWindow(Form):
             message += '{}\n'.format(message_incorrect_levels)  
         return message 
 
-    def _spaces_creation_by_sorted_rooms(self, sorted_rooms):
+    def _spaces_creation_by_sorted_rooms(self, sorted_rooms, transaction_name):
         report_message = ''
         sorted_rooms.pop('total')
         report_counter = []
         with Transaction(self.doc) as t:
-            t.Start('Create Spaces from selected Phase')
+            t.Start(transaction_name)
             for rooms in sorted_rooms.values():
                 for room in rooms.values():
                     result = self._create_space_by_room_instance(room)
