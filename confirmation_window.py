@@ -8,7 +8,7 @@ from System.Drawing import Size, Point, Font, FontStyle
 from math import ceil
 
 
-class CreationWindow(Form):
+class ConfirmationWindow(Form):
     def __init__(self, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms, active_view_phase, current_levels):
         self.current_levels = current_levels
         self.rooms_area_incorrect = rooms_area_incorrect
