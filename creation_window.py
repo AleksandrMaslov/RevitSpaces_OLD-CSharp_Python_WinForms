@@ -1,24 +1,11 @@
 import clr
-import os
 import math
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
 clr.AddReference('RevitAPIUI')
 from System.Windows.Forms import (StatusBar, Form, StatusBar, FormBorderStyle, Label, Button, DialogResult)
 from System.Drawing import Size, Point, Font, FontStyle
-from Autodesk.Revit.DB import Transaction, TransactionStatus, UV, BuiltInParameter
-from Autodesk.Revit.UI import TaskDialog
 from math import ceil
-from lite_logging import Logger
-from information_window import InformationWindow
-
-logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
-                file_name='test_log',
-                default_status=Logger.WARNING)
-
-# TODO: Add Delete All Warning
-# TODO: addin name Space Room Creator
-# TODO: checkboxes for Delete
 
 
 class CreationWindow(Form):
@@ -160,8 +147,3 @@ class CreationWindow(Form):
     def _click_btn_continue(self, sender, e):
         self.DialogResult = DialogResult.OK
         self.Close()
-         
-
-if __name__ == '__main__':
-    creation_window = CreationWindow('title', 'message')
-    creation_window.ShowDialog()
