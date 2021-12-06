@@ -149,6 +149,12 @@ class MainWindow(Form):
             information_window = InformationWindow('Information', message)
             information_window.ShowDialog() 
             return
+
+        window_title = 'Delete All Spaces'
+        message = 'You are going to delete All Spaces in the Current Model.\n\n'
+        confirmation_window = ConfirmationWindow(window_title, message)
+        if confirmation_window.ShowDialog() == DialogResult.Cancel:
+            return
         with Transaction(self.doc) as t:
             t.Start('Delete All Spaces')
             deleleted_counter, phases_counter, phases_list = self._delete_all_spaces()
@@ -165,7 +171,13 @@ class MainWindow(Form):
     def _click_btn_delete_selected(self, sender, e):
         selected_item = self.combobox_phase.SelectedItem
         if selected_item:
+            window_title = 'Delete Selected Spaces'
             phase_name = selected_item.split(' - ', 1)[1]
+            message = 'You are going to delete Spaces in "{}" Phase in the Current model.\n\n'.format(phase_name)
+            confirmation_window = ConfirmationWindow(window_title, message)
+            if confirmation_window.ShowDialog() == DialogResult.Cancel:
+                return
+
             with Transaction(self.doc) as t:
                 t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
                 deleted_counter = self._delete_spaces_by_phase_name(phase_name)
@@ -207,13 +219,12 @@ class MainWindow(Form):
             number_of_phases_with_spaces = len(rooms_by_phase_dct)
             if number_of_phases_with_spaces > 0:
                 window_title = 'Spaces Creation'
-                window_width = 600
                 transaction_name = 'Create All Spaces'
                 rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
                 message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
 
-                creation_window = ConfirmationWindow(window_title, window_width, message, sorted_rooms['total'] > 0)
-                if creation_window.ShowDialog() == DialogResult.Cancel:
+                confirmation_window = ConfirmationWindow(window_title, message, sorted_rooms['total'] > 0)
+                if confirmation_window.ShowDialog() == DialogResult.Cancel:
                     return
 
                 self.Close()
@@ -232,18 +243,17 @@ class MainWindow(Form):
         selected_link_phase_item = self.combobox_link_phase.SelectedItem
         if selected_link_item and selected_link_phase_item:
             window_title = 'Spaces Creation'
-            window_width = 600
-            transaction_name = 'Create Spaces from selected Phase'
             link_name = selected_link_item.split(' - ', 1)[1]
             phase_name = selected_link_phase_item.split(' - ', 1)[1]
+            transaction_name = 'Create Spaces from "{}" Phase of "{}" Link'.format(phase_name, link_name)
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
 
             rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
             message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
             
-            creation_window = ConfirmationWindow(window_title, window_width, message, sorted_rooms['total'] > 0)
-            if creation_window.ShowDialog() == DialogResult.Cancel:
+            confirmation_window = ConfirmationWindow(window_title, message, sorted_rooms['total'] > 0)
+            if confirmation_window.ShowDialog() == DialogResult.Cancel:
                 return
 
             self.Close()

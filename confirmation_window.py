@@ -9,9 +9,8 @@ from math import ceil
 
 
 class ConfirmationWindow(Form):
-    def __init__(self, title, width, message, continue_flag = True):
+    def __init__(self, title, message, continue_flag = True):
         self.title = title
-        self.width = width
         self.message = message
         self.continue_flag = continue_flag
         self._initialize_components()
@@ -20,7 +19,7 @@ class ConfirmationWindow(Form):
         # window
         self.Text = self.title
         self.form_length = 150
-        self.form_width = self.width
+        self.form_width = 600
         self.MinimumSize = Size(self.form_width, self.form_length)
         self.Size = Size(self.form_width, self.form_length)
         self.CenterToScreen()
