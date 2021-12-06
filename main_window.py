@@ -264,10 +264,13 @@ class MainWindow(Form):
             information_window.ShowDialog()
 
     def _click_btn_help(self, sender, e):
-        message = '"Create Spaces from Linked Rooms" addin is able to manage the deletion of existing Spaces in the Current model and create new Spaces in the Current model similar to Rooms in the selected Link model or exact Phase in the selected Linked model.\n\n' \
-        'Upper box allows to check how many Spaces are available in the exact model Phase in the currently opened model. You are able to choose specific Phase to delete Spaces by "Delete Selected" button or you can delete all Spaces in the Current model using "Delete All" button. After that you will get the report about number of deleted Spaces and Phase names.\n\n' \
-        'Lower box allows to check how many Rooms are available in the selected Linked model and how many Rooms are available in the special Phase of the Linked model that you select. You are able to choose specific Linked model to create new Spaces in the Current model similar to all available Rooms ("Create All" button) or you can select the exact Linked model Phase to create new Spaces according to this selected Phase ("Create Selected" button). After one of "Create" button you will see.\n'
-
+        message = 'Алгоритм работы плагина:\n' \
+        '- При запуске считываются пространства и помещения из текущей открытой модели для дальнейших действий с ними (полного и частичного удаления). Удаление осуществляется нажатием кнопок Delete All или Delete Selected.\n\n' \
+        '- Считываются подгруженные линки и количество помещений в них для дальнейшего создания аналогичных пространств или помещений в текущей модели (полного и частичного создания). Создание осуществляется нажатием кнопок Create All или Create Selected для конкретного линка или конкретной фазы выбранного линка.\n\n' \
+        '- Перед запуском плагина производится проверка на наличие в модели рабочего набора "Model Spaces".\n\n' \
+        '- Перед созданием пространств производится проверка на корректность размещения помещений в выбранном линке, на наличие совпадающих по имени и отметке уровней, содержащих помещения, в линке и текущей модели. Помещения, не прошедшие проверку, не создаются, выводятся в информационном окне подтверждения создания новых пространств или помещений с рекомендациями по устранению ошибок.\n\n' \
+        '- При создании новых пространств и помещений производится перенос данных об уровне, координатах расположения, верхней и нижней границе из модели линка. Созданные пространства автоматически попадают в рабочий набор "Model Spaces".\n\n' \
+        '                                                     Молодец, читаешь инструкцию <3'
         information_window = InformationWindow('Help', message)
         information_window.ShowDialog()
 
