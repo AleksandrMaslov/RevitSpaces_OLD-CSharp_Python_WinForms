@@ -16,7 +16,7 @@ from information_window import InformationWindow
 logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spaces From Linked Rooms'),
                 file_name='test_log',
                 default_status=Logger.WARNING)
-doc = __revit__.ActiveUIDocument.Document
+# doc = __revit__.ActiveUIDocument.Document
 active_view = doc.ActiveView
 transaction = Transaction(doc)
 # __window__.Close()
