@@ -247,7 +247,11 @@ class MainWindow(Form):
             else:
                 message = 'There are no Rooms in the selected Linked model.'
                 information_window = InformationWindow('Information', message)
-                information_window.ShowDialog()               
+                information_window.ShowDialog()
+        else:
+            message = 'Link model is not selected in the list of Links.'
+            information_window = InformationWindow('Error', message)
+            information_window.ShowDialog()             
 
     def _click_btn_create_selected(self, sender, e):
         selected_link_item = self.combobox_link.SelectedItem
