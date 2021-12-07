@@ -16,7 +16,7 @@ logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spac
 
 
 class MainWindow(Form):
-    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, current_rooms_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase):
+    def __init__(self, doc, workset_spaces_id, workset_rooms_id, current_spaces_by_phase, current_rooms_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
         self.rooms_by_phase_dct = current_rooms_by_phase
@@ -246,6 +246,12 @@ class MainWindow(Form):
             information_window.ShowDialog()
 
     def _click_btn_create_all(self, sender, e):
+        # if workset_spaces_id:
+        # else:
+        #     logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
+        #     message = 'There is no "Model Spaces" workset in the Current model. Please create it and relaunch the Addin.'
+        #     information_window = InformationWindow('Error', message)
+        #     information_window.ShowDialog()  
         selected_link_item = self.combobox_link.SelectedItem
         if selected_link_item:
             link_name = selected_link_item.split(' - ', 1)[1]
