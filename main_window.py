@@ -3,7 +3,7 @@ import clr
 import os
 clr.AddReference('System.Windows.Forms')
 clr.AddReference('System.Drawing')
-from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorderStyle, GroupBox, ComboBox, Label, DialogResult)
+from System.Windows.Forms import (Button, StatusBar, Form, StatusBar, FormBorderStyle, GroupBox, ComboBox, Label, DialogResult, RadioButton)
 from System.Drawing import Point, Size
 from Autodesk.Revit.DB import Transaction, TransactionStatus, BuiltInParameter, UV
 from lite_logging import Logger
@@ -29,7 +29,7 @@ class MainWindow(Form):
         # window
         self.Text = 'Spaces Manager'
         self.form_width = 320
-        self.form_length = 400
+        self.form_length = 470
         self.MinimumSize = Size(self.form_width, self.form_length)
         self.Size = Size(self.form_width, self.form_length)
         self.CenterToScreen()
@@ -42,13 +42,13 @@ class MainWindow(Form):
         self.groupbox_offset_top = 18
         self.groupbox_width = self.form_width - 36
         self.groupbox_current_location_Y = 15
-        self.groupbox_current_length = 80
-        self.groupbox_linked_length = 190
-        self.groupbox_linked_location_Y = self.groupbox_current_location_Y + self.groupbox_current_length + 10
+        self.groupbox_current_length = 108
+        self.groupbox_linked_length = 220
+        self.groupbox_linked_location_Y = self.groupbox_current_location_Y + self.groupbox_current_length + 15
 
         self.groupbox_current = GroupBox()
         self.groupbox_current.Location = Point(self.form_offset_left, self.groupbox_current_location_Y)
-        self.groupbox_current.Text = "Current Model Spaces by Phase"
+        self.groupbox_current.Text = "Current Model Spaces\Rooms by Phase"
         self.groupbox_current.Size = Size(self.groupbox_width, self.groupbox_current_length)
         self.Controls.Add(self.groupbox_current)
 
@@ -84,9 +84,10 @@ class MainWindow(Form):
         self.button_width = 60 
         self.button_length = 25
         self.button_width_large = 120 
+        self.button_width_xlarge = 145
         self.button_offset = 22
         self.button_location_current_Y = self.groupbox_current_length - self.button_length - 8
-        self.button_location_linked_Y = self.groupbox_offset_top + 33 + self.button_length
+        self.button_location_linked_Y = self.groupbox_offset_top + 60 + self.button_length
     
         btn_help = Button()
         btn_help.Text = 'Help'
@@ -104,8 +105,8 @@ class MainWindow(Form):
 
         btn_delete_selected = Button()
         btn_delete_selected.Text = 'Delete Selected'
-        btn_delete_selected.Size = Size(self.button_width_large, self.button_length)
-        btn_delete_selected.Location = Point(self.groupbox_width - self.button_width_large - self.groupbox_offset_left - 1, self.button_location_current_Y)
+        btn_delete_selected.Size = Size(self.button_width_xlarge, self.button_length)
+        btn_delete_selected.Location = Point(self.groupbox_width - self.button_width_xlarge - self.groupbox_offset_left - 1, self.button_location_current_Y)
         btn_delete_selected.Parent = self.groupbox_current
         btn_delete_selected.Click += self._click_btn_delete_selected
 
@@ -118,10 +119,40 @@ class MainWindow(Form):
 
         btn_create_selected = Button()
         btn_create_selected.Text = 'Create Selected'
-        btn_create_selected.Size = Size(self.button_width_large, self.button_length)
-        btn_create_selected.Location = Point(self.groupbox_width - self.button_width_large - self.groupbox_offset_left - 1, self.button_location_linked_Y)
+        btn_create_selected.Size = Size(self.button_width_xlarge, self.button_length)
+        btn_create_selected.Location = Point(self.groupbox_width - self.button_width_xlarge - self.groupbox_offset_left - 1, self.button_location_linked_Y)
         btn_create_selected.Parent = self.groupbox_linked
         btn_create_selected.Click += self._click_btn_create_selected
+
+        #radiobuttons
+        self.radio_button_current_location_Y = self.button_location_current_Y - 28
+        self.radio_button_link_location_Y = self.button_location_linked_Y - 28
+        self.radio_button_width = 80
+
+        self.radio_buttons_current_spaces = RadioButton()
+        self.radio_buttons_current_spaces.Parent = self.groupbox_current
+        self.radio_buttons_current_spaces.Text = "Spaces"
+        self.radio_buttons_current_spaces.Size = Size(self.radio_button_width, 20)
+        self.radio_buttons_current_spaces.Location = Point(self.groupbox_offset_left, self.radio_button_current_location_Y)
+
+        self.radio_buttons_current_rooms = RadioButton()
+        self.radio_buttons_current_rooms.Parent = self.groupbox_current
+        self.radio_buttons_current_rooms.Text = "Rooms"
+        self.radio_buttons_current_rooms.Size = Size(self.radio_button_width, 20)
+        self.radio_buttons_current_rooms.Location = Point(self.groupbox_offset_left + self.radio_button_width + 3, self.radio_button_current_location_Y)
+
+        self.radio_buttons_link_spaces = RadioButton()
+        self.radio_buttons_link_spaces.Parent = self.groupbox_linked
+        self.radio_buttons_link_spaces.Text = "Spaces"
+        self.radio_buttons_link_spaces.Size = Size(self.radio_button_width, 20)
+        self.radio_buttons_link_spaces.Location = Point(self.groupbox_offset_left, self.radio_button_link_location_Y)
+
+        self.radio_buttons_link_rooms = RadioButton()
+        self.radio_buttons_link_rooms.Parent = self.groupbox_linked
+        self.radio_buttons_link_rooms.Text = "Rooms"
+        self.radio_buttons_link_rooms.Size = Size(self.radio_button_width, 20)
+        self.radio_buttons_link_rooms.Location = Point(self.groupbox_offset_left + self.radio_button_width + 3, self.radio_button_link_location_Y)
+
 
         # label
         self.label_location_linked_Y = self.button_location_linked_Y + self.button_length + 5
@@ -131,7 +162,7 @@ class MainWindow(Form):
         label_current_phase.Parent = self.groupbox_linked
         label_current_phase.Location = Point(self.groupbox_offset_left, self.label_location_linked_Y)
         label_current_phase.Size = Size(self.label_width, 75)
-        label_current_phase.Text = 'New spaces Phase:\n{}\n\n* If you need to change the Phase close the addin and open definite view in your model.'.format(self.active_view_phase)
+        label_current_phase.Text = 'New elements Phase:\n{}\n\n* If you need to change the Phase close the addin and open definite view in your model.'.format(self.active_view_phase)
 
         #satusbar
         self.statusbar = StatusBar()
@@ -268,7 +299,7 @@ class MainWindow(Form):
         '- При запуске считываются пространства и помещения из текущей открытой модели для дальнейших действий с ними (полного и частичного удаления). Удаление осуществляется нажатием кнопок Delete All или Delete Selected.\n\n' \
         '- Считываются подгруженные линки и количество помещений в них для дальнейшего создания аналогичных пространств или помещений в текущей модели (полного и частичного создания). Создание осуществляется нажатием кнопок Create All или Create Selected для конкретного линка или конкретной фазы выбранного линка.\n\n' \
         '- Перед запуском плагина производится проверка на наличие в модели рабочего набора "Model Spaces".\n\n' \
-        '- Перед созданием пространств производится проверка на корректность размещения помещений в выбранном линке, на наличие совпадающих по имени и отметке уровней, содержащих помещения, в линке и текущей модели. Помещения, не прошедшие проверку, не создаются, выводятся в информационном окне подтверждения создания новых пространств или помещений с рекомендациями по устранению ошибок.\n\n' \
+        '- Перед созданием пространств и помещений производится проверка на корректность размещения помещений в выбранном линке, на наличие совпадающих по имени и отметке уровней, содержащих помещения, в линке и текущей модели. Помещения, не прошедшие проверку, не создаются, выводятся в информационном окне подтверждения создания новых пространств или помещений с рекомендациями по устранению ошибок.\n\n' \
         '- При создании новых пространств и помещений производится перенос данных об уровне, координатах расположения, верхней и нижней границе из модели линка. Созданные пространства автоматически попадают в рабочий набор "Model Spaces".\n\n' \
         '                                                     Молодец, читаешь инструкцию <3'
         information_window = InformationWindow('Help', message)
