@@ -197,6 +197,7 @@ class MainWindow(Form):
             if t.GetStatus() == TransactionStatus.Committed:
                 self.spaces_by_phase_dct = {}
                 self.combobox_phase.Items.Clear()
+                self.combobox_phase.Text = " - Select Phase - "
 
                 logger.write_log('{} Spaces have been deleted\nin {} model Phases:\n{}'.format(deleleted_counter, phases_counter, phases_list), Logger.INFO)
                 message = 'Total {} Spaces have been deleted\nin {} model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
@@ -204,25 +205,33 @@ class MainWindow(Form):
                 information_window.ShowDialog() 
 
     def _click_btn_delete_selected(self, sender, e):
+        if self.radio_buttons_current_spaces.Checked:
+            elements_type = 'Spaces'
+            elements_by_phase_dict = self.spaces_by_phase_dct
+        else:
+            elements_type = 'Rooms'
+            elements_by_phase_dict = self.rooms_by_phase_dct           
+
         selected_item = self.combobox_phase.SelectedItem
         if selected_item:
-            window_title = 'Delete Selected Spaces'
+            window_title = 'Delete Selected {}'.format(elements_type)
             phase_name = selected_item.split(' - ', 1)[1]
-            message = 'You are going to delete Spaces in "{}" Phase in the Current model.\n\n'.format(phase_name)
+            message = 'You are going to delete {} in "{}" Phase in the Current model.\n\n'.format(elements_type, phase_name)
             confirmation_window = ConfirmationWindow(window_title, message)
             if confirmation_window.ShowDialog() == DialogResult.Cancel:
                 return
 
             with Transaction(self.doc) as t:
-                t.Start('Delete Spaces in "{}" Phase'.format(phase_name))
-                deleted_counter = self._delete_spaces_by_phase_name(phase_name)
+                t.Start('Delete {} in "{}" Phase'.format(elements_type, phase_name))
+                deleted_counter = self._delete_elements_by_phase_name(elements_by_phase_dict, phase_name)
                 t.Commit()
                 if t.GetStatus() == TransactionStatus.Committed:
-                    self.spaces_by_phase_dct.pop(phase_name)
+                    elements_by_phase_dict.pop(phase_name)
                     self.combobox_phase.Items.Remove(selected_item)
+                    self.combobox_phase.Text = " - Select Phase - "
 
-                    logger.write_log('{} Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name), Logger.INFO)
-                    message = 'Total {} Spaces have been deleted\nin "{}" model Phase'.format(deleted_counter, phase_name)
+                    logger.write_log('{} {} have been deleted\nin "{}" model Phase'.format(deleted_counter, elements_type, phase_name), Logger.INFO)
+                    message = 'Total {} {} have been deleted\nin "{}" model Phase'.format(deleted_counter, elements_type, phase_name)
                     information_window = InformationWindow('Report', message)
                     information_window.ShowDialog() 
         else:
@@ -231,7 +240,7 @@ class MainWindow(Form):
             information_window.ShowDialog()
 
     def _changed_combobox_link_selection(self, sender, e):
-        self.combobox_link_phase.SelectedIndex = -1
+        self.combobox_link_phase.Text = " - Select Phase - "
         selected_link_item = self.combobox_link.SelectedItem
         if selected_link_item:
             link_name = selected_link_item.split(' - ')[1]
@@ -247,6 +256,7 @@ class MainWindow(Form):
             information_window.ShowDialog()
 
     def _changed_radiobutton_current_spaces(self, sender, e):
+        self.combobox_phase.Text = " - Select Phase - "
         if self.radio_buttons_current_spaces.Checked:
             self.combobox_phase.Items.Clear()
             self._fill_combobox_phase(self.spaces_by_phase_dct, 'Spaces')
@@ -350,11 +360,11 @@ class MainWindow(Form):
             deleleted_counter += self._delete_spaces_by_phase_name(phase_name)
         return deleleted_counter, phases_counter, phases_list
 
-    def _delete_spaces_by_phase_name(self, phase_name):
+    def _delete_elements_by_phase_name(self, elements_by_phase_dict, phase_name):
         deleted_counter = 0
-        spaces = self.spaces_by_phase_dct[phase_name]
-        for space in spaces.values():
-            self.doc.Delete(space.Id)
+        elements = elements_by_phase_dict[phase_name]
+        for element in elements.values():
+            self.doc.Delete(element.Id)
             deleted_counter += 1 
         return deleted_counter
 
