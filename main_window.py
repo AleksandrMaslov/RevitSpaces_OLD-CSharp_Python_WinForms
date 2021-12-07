@@ -175,7 +175,7 @@ class MainWindow(Form):
         self.Load += self._load_window
 
     def _load_window(self, sender, e):
-        self._fill_combobox_phase(self.spaces_by_phase_dct, 'Spaces')
+        self._fill_combobox_phase(self.spaces_by_phase_dct)
         self._fill_combobox_link()
 
     def _click_btn_delete_all(self, sender, e):
@@ -255,7 +255,7 @@ class MainWindow(Form):
             self.combobox_link_phase.Items.Clear()
             for phase_name, rooms in link_rooms_by_phase_dct.items():
                 room_number = len(rooms)
-                item = '{} Rooms - {}'.format(room_number, phase_name)
+                item = '{} Room{} - {}'.format(room_number, self._define_s(room_number), phase_name)
                 self.combobox_link_phase.Items.Add(item)                
         else:
             message = 'Link is not selected for analize.'
@@ -266,27 +266,21 @@ class MainWindow(Form):
         self.combobox_phase.Text = " - Select Phase - "
         if self.radio_buttons_current_spaces.Checked:
             self.combobox_phase.Items.Clear()
-            self._fill_combobox_phase(self.spaces_by_phase_dct, 'Spaces')
+            self._fill_combobox_phase(self.spaces_by_phase_dct)
         else:
             self.combobox_phase.Items.Clear()
-            self._fill_combobox_phase(self.rooms_by_phase_dct, 'Rooms')
+            self._fill_combobox_phase(self.rooms_by_phase_dct)
 
     def _click_btn_create_all(self, sender, e):
-        # if self.radio_buttons_link_spaces.Checked:
-        # if workset_spaces_id:
-        # else:
-        #     logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
-        #     message = 'There is no "Model Spaces" workset in the Current model. Please create it and relaunch the Addin.'
-        #     information_window = InformationWindow('Error', message)
-        #     information_window.ShowDialog()  
+        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
         selected_link_item = self.combobox_link.SelectedItem
         if selected_link_item:
             link_name = selected_link_item.split(' - ', 1)[1]
             rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
             number_of_phases_with_spaces = len(rooms_by_phase_dct)
             if number_of_phases_with_spaces > 0:
-                window_title = 'Spaces Creation'
-                transaction_name = 'Create All Spaces'
+                window_title = '{}s Creation'.format(element_name)
+                transaction_name = 'Create All {}s from {} Link'.format(element_name, link_name)
                 rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
                 message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
 
@@ -295,7 +289,7 @@ class MainWindow(Form):
                     return
 
                 self.Close()
-                self._spaces_creation_by_sorted_rooms(sorted_rooms, transaction_name)
+                self._elements_creation_by_sorted_rooms(sorted_rooms, transaction_name)
             else:
                 message = 'There are no Rooms in the selected Linked model.'
                 information_window = InformationWindow('Information', message)
@@ -342,10 +336,11 @@ class MainWindow(Form):
         information_window = InformationWindow('Help', message)
         information_window.ShowDialog()
 
-    def _fill_combobox_phase(self, element_by_phase_dct, element_type):
+    def _fill_combobox_phase(self, element_by_phase_dct):
+        element_name = self._define_element_name(self.radio_buttons_current_spaces.Checked)
         for phase_name, elements in element_by_phase_dct.items():
             elements_number = len(elements)
-            item = '{} {} - {}'.format(elements_number, element_type, phase_name)
+            item = '{} {}{} - {}'.format(elements_number, element_name, self._define_s(elements_number), phase_name)
             self.combobox_phase.Items.Add(item)
 
     def _fill_combobox_link(self):
@@ -354,7 +349,7 @@ class MainWindow(Form):
             for rooms in phases.values():
                 rooms_number_phase = len(rooms)
                 rooms_number_total += rooms_number_phase
-            item = '{} Rooms - {}'.format(rooms_number_total, link_name)
+            item = '{} Room{} - {}'.format(rooms_number_total, self._define_s(rooms_number_total), link_name)
             self.combobox_link.Items.Add(item)
 
     def _delete_all_elements(self, elements_by_phase_dict):
