@@ -22,13 +22,14 @@ class MainWindow(Form):
         self.rooms_by_phase_dct = current_rooms_by_phase
         self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
         self.workset_spaces_id = workset_spaces_id
+        self.workset_rooms_id = workset_rooms_id
         self.current_levels = current_levels
         self.active_view_phase = active_view_phase
         self._initialize_components()
 
     def _initialize_components(self):
         # window
-        self.Text = 'Spaces Manager'
+        self.Text = 'Spaces & Rooms Manager'
         self.form_width = 320
         self.form_length = 470
         self.MinimumSize = Size(self.form_width, self.form_length)
@@ -157,7 +158,6 @@ class MainWindow(Form):
         self.radio_buttons_link_rooms.Size = Size(self.radio_button_width, 20)
         self.radio_buttons_link_rooms.Location = Point(self.groupbox_offset_left + self.radio_button_width + 3, self.radio_button_link_location_Y)
 
-
         # label
         self.label_location_linked_Y = self.button_location_linked_Y + self.button_length + 5
         self.label_width = self.groupbox_width - self.groupbox_offset_left * 2
@@ -272,7 +272,7 @@ class MainWindow(Form):
             self._fill_combobox_phase(self.rooms_by_phase_dct, 'Rooms')
 
     def _click_btn_create_all(self, sender, e):
-        # if self.radio_buttons_current_spaces.Checked == True:
+        # if self.radio_buttons_link_spaces.Checked:
         # if workset_spaces_id:
         # else:
         #     logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
@@ -306,13 +306,14 @@ class MainWindow(Form):
             information_window.ShowDialog()             
 
     def _click_btn_create_selected(self, sender, e):
+        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
         selected_link_item = self.combobox_link.SelectedItem
         selected_link_phase_item = self.combobox_link_phase.SelectedItem
         if selected_link_item and selected_link_phase_item:
-            window_title = 'Spaces Creation'
+            window_title = '{}s Creation'.format(element_name)
             link_name = selected_link_item.split(' - ', 1)[1]
             phase_name = selected_link_phase_item.split(' - ', 1)[1]
-            transaction_name = 'Create Spaces from "{}" Phase of "{}" Link'.format(phase_name, link_name)
+            transaction_name = 'Create {}s from "{}" Phase of "{}" Link'.format(element_name, phase_name, link_name)
             link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
             rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
 
@@ -324,20 +325,19 @@ class MainWindow(Form):
                 return
 
             self.Close()
-            self._spaces_creation_by_sorted_rooms(sorted_rooms, transaction_name)
+            self._elements_creation_by_sorted_rooms(sorted_rooms, transaction_name)
         else:
             message = 'Phase is not selected in the Linked model.'
             information_window = InformationWindow('Error', message)
             information_window.ShowDialog()
 
     def _click_btn_help(self, sender, e):
-        # FIX!
         message = 'Алгоритм работы плагина:\n' \
         '- При запуске считываются пространства и помещения из текущей открытой модели для дальнейших действий с ними (полного и частичного удаления). Удаление осуществляется нажатием кнопок Delete All или Delete Selected.\n\n' \
         '- Считываются подгруженные линки и количество помещений в них для дальнейшего создания аналогичных пространств или помещений в текущей модели (полного и частичного создания). Создание осуществляется нажатием кнопок Create All или Create Selected для конкретного линка или конкретной фазы выбранного линка.\n\n' \
-        '- Перед запуском плагина производится проверка на наличие в модели рабочего набора "Model Spaces".\n\n' \
+        '- Перед созданием пространств и помещений производится проверка на наличие в модели рабочего набора "Model Spaces" или "Model Rooms".\n\n' \
         '- Перед созданием пространств и помещений производится проверка на корректность размещения помещений в выбранном линке, на наличие совпадающих по имени и отметке уровней, содержащих помещения, в линке и текущей модели. Помещения, не прошедшие проверку, не создаются, выводятся в информационном окне подтверждения создания новых пространств или помещений с рекомендациями по устранению ошибок.\n\n' \
-        '- При создании новых пространств и помещений производится перенос данных об уровне, координатах расположения, верхней и нижней границе из модели линка. Созданные пространства автоматически попадают в рабочий набор "Model Spaces".\n\n' \
+        '- При создании новых пространств и помещений производится перенос данных об уровне, координатах расположения, верхней и нижней границе из модели линка. Созданные пространства и помещения автоматически попадают в рабочие наборы "Model Spaces" и "Model Rooms".\n\n' \
         '                                                     Молодец, читаешь инструкцию <3'
         information_window = InformationWindow('Help', message)
         information_window.ShowDialog()
@@ -422,48 +422,14 @@ class MainWindow(Form):
         # print '{} {} {} {}'.format(rooms_area_incorrect['total'], rooms_level_is_missing['total'], rooms_level_incorrect['total'], sorted_rooms['total'])
         return rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms
 
-    def _create_space_by_room_instance(self, room):
-        room_location_point = room.Location.Point
-        room_level_name = room.Level.Name
-        space_level = self.current_levels[room_level_name]['instance']
-        room_base_offset = room.BaseOffset
-        room_limit_offset = room.LimitOffset
-        room_number = room.Number
-        room_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString()
-        room_upper_limit = room.UpperLimit
-        if room_upper_limit:
-            room_upper_limit_name = room_upper_limit.Name
-            room_upper_limit = self.current_levels[room_upper_limit_name]['instance']
-            room_upper_limit_level_id = room_upper_limit.Id #Level ID 
-        else:
-            room_upper_limit_level_id = space_level.Id
-
-        try:
-            space = self.doc.Create.NewSpace(space_level, UV(room_location_point.X, room_location_point.Y))
-            space.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(room_number)
-            space.get_Parameter(BuiltInParameter.ROOM_NAME).Set(room_name)
-            space.get_Parameter(BuiltInParameter.ROOM_LOWER_OFFSET).Set(room_base_offset)
-            space.get_Parameter(BuiltInParameter.ROOM_UPPER_OFFSET).Set(room_limit_offset)
-            space.get_Parameter(BuiltInParameter.ROOM_UPPER_LEVEL).Set(room_upper_limit_level_id)
-            space.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM).Set(self.workset_spaces_id)
-            space_phase_name = space.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
-
-            logger.write_log('Space "{} {}" have been placed in the phase - {}'.format(room_number, room_name, space_phase_name), Logger.INFO)
-            return 'successful'
-        except Exception as e:
-            logger.write_log('Space "{} {}" error: {}'.format(room_number, room_name, e), Logger.ERROR)
-            return 'warnings'
-
     def _define_creation_message(self, rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms):
+        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
         message = ''
         warnings = 'WARNINGS (!)'
 
         sorted_rooms_total = sorted_rooms['total']
         if sorted_rooms_total > 0:
-            if sorted_rooms_total == 1:
-                phrase_begins = 'Space is'
-            else:
-                phrase_begins = 'Spaces are'
+            phrase_begins = '{}{} {}'.format(element_name, self._define_s(sorted_rooms_total), self._define_tobe_form(sorted_rooms_total))
             message_sorted_rooms = 'Total {} {} ready for creation in the "{}" Phase.'.format(sorted_rooms_total, phrase_begins, self.active_view_phase)
             message += '{}\n\n'.format(message_sorted_rooms) 
 
@@ -472,10 +438,7 @@ class MainWindow(Form):
         if rooms_area_incorrect_total > 0:
             if not warnings in message:
                 message += '{}\n'.format(warnings)
-            if rooms_area_incorrect_total == 1:
-                phrase_begins = 'Space'
-            else:
-                phrase_begins = 'Spaces'
+            phrase_begins = '{}{}'.format(element_name, self._define_s(rooms_area_incorrect_total))
             phase_names = ''
             for phase_name in rooms_area_incorrect.keys():
                 phase_names += '{}\n'.format(phase_name)
@@ -486,32 +449,27 @@ class MainWindow(Form):
         if missing_levels_total > 0:
             if not warnings in message:
                 message += '{}\n'.format(warnings)
-            if missing_levels_total == 1:
-                phrase_begins = 'Space'
-            else:
-                phrase_begins = 'Spaces'
+            phrase_begins = '{}{}'.format(element_name, self._define_s(missing_levels_total))
             level_names = ''
             for level_name in rooms_level_is_missing['names']:
                 level_names += '{}\n'.format(level_name)
-            message_missing_levels = '- {} {} can not be created because of missing Levels in the Current model.\nPlease add the following levels with the same elvation to the Current Model to create new Spaces correctly:\n{}'.format(missing_levels_total, phrase_begins, level_names)
+            message_missing_levels = '- {} {} can not be created because of missing Levels in the Current model.\nPlease add the following levels with the same elvation to the Current Model to create new {} correctly:\n{}'.format(missing_levels_total, phrase_begins, phrase_begins, level_names)
             message += '{}\n'.format(message_missing_levels)
 
         incorrect_levels_total = rooms_level_incorrect['total']
         if incorrect_levels_total > 0:
             if not warnings in message:
                 message += '{}\n'.format(warnings)
-            if incorrect_levels_total == 1:
-                phrase_begins = 'Space'
-            else:
-                phrase_begins = 'Spaces'
+            phrase_begins = '{}{}'.format(element_name, self._define_s(incorrect_levels_total))
             level_names = ''
             for level_name in rooms_level_incorrect['names']:
                 level_names += '{}\n'.format(level_name)
-            message_incorrect_levels = '- {} {} can not be created because of different Levels elevation in the Link and Current Model.\nPlease compare the elevation of the following Levels to solve the difference and create new Spaces correctly:\n{}'.format(incorrect_levels_total, phrase_begins, level_names)
+            message_incorrect_levels = '- {} {} can not be created because of different Levels elevation in the Link and Current Model.\nPlease compare the elevation of the following Levels to solve the difference and create new {} correctly:\n{}'.format(incorrect_levels_total, phrase_begins, phrase_begins, level_names)
             message += '{}\n'.format(message_incorrect_levels)  
         return message 
 
-    def _spaces_creation_by_sorted_rooms(self, sorted_rooms, transaction_name):
+    def _elements_creation_by_sorted_rooms(self, sorted_rooms, transaction_name):
+        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
         report_message = ''
         sorted_rooms.pop('total')
         report_counter = []
@@ -519,7 +477,7 @@ class MainWindow(Form):
             t.Start(transaction_name)
             for rooms in sorted_rooms.values():
                 for room in rooms.values():
-                    result = self._create_space_by_room_instance(room)
+                    result = self._create_element_by_room_instance(room)
                     report_counter.append(result)
             self.doc.Regenerate()
             t.Commit()
@@ -528,23 +486,71 @@ class MainWindow(Form):
                 number_successful = report_counter.count('successful')
                 number_warnings = report_counter.count('warnings')
                 if number_successful > 0:
-                    if number_successful == 1:
-                        phrase = 'Space has'
-                    else:
-                        phrase = 'Spaces have'
-                    report_message += 'Total {} {} been created Successfully.\n'.format(number_successful, phrase)
+                    report_message += 'Total {} {}{} been created Successfully.\n'.format(number_successful, element_name, self._define_have_form(number_successful))
                 if number_warnings > 0:
-                    if number_warnings == 1:
-                        phrase = 'Space has'
-                    else:
-                        phrase = 'Spaces have'
-                    report_message += '{} {} been created with Warnings. Please check the Log.'.format(number_warnings, phrase)
+                    report_message += '{} {}{} been created with Warnings. Please check the Log.'.format(number_warnings, element_name, self._define_have_form(number_warnings))
 
                 log_link = os.path.join(os.getenv('appdata'), 'Synergy Systems', 'Create Spaces From Linked Rooms')
                 information_window = InformationWindow('Report', report_message, log_link, 'View Logs')
                 information_window.ShowDialog()       
 
+    def _create_element_by_room_instance(self, room):
+        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
+        room_location_point = room.Location.Point
+        room_level_name = room.Level.Name
+        element_level = self.current_levels[room_level_name]['instance']
+        room_base_offset = room.BaseOffset
+        room_limit_offset = room.LimitOffset
+        room_number = room.Number
+        room_name = room.get_Parameter(BuiltInParameter.ROOM_NAME).AsString()
+        room_upper_limit = room.UpperLimit
+        if room_upper_limit:
+            room_upper_limit_name = room_upper_limit.Name
+            room_upper_limit = self.current_levels[room_upper_limit_name]['instance']
+            room_upper_limit_level_id = room_upper_limit.Id 
+        else:
+            room_upper_limit_level_id = element_level.Id
 
-if __name__ == '__main__':
-    main_window = MainWindow()
-    main_window.ShowDialog()
+        try:
+            if self.radio_buttons_link_spaces.Checked:
+                element = self.doc.Create.NewSpace(element_level, UV(room_location_point.X, room_location_point.Y))
+                element.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM).Set(self.workset_spaces_id)
+            else:
+                element = self.doc.Create.NewRoom(element_level, UV(room_location_point.X, room_location_point.Y))
+                element.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM).Set(self.workset_rooms_id)
+            element.get_Parameter(BuiltInParameter.ROOM_NUMBER).Set(room_number)
+            element.get_Parameter(BuiltInParameter.ROOM_NAME).Set(room_name)
+            element.get_Parameter(BuiltInParameter.ROOM_LOWER_OFFSET).Set(room_base_offset)
+            element.get_Parameter(BuiltInParameter.ROOM_UPPER_OFFSET).Set(room_limit_offset)
+            element.get_Parameter(BuiltInParameter.ROOM_UPPER_LEVEL).Set(room_upper_limit_level_id)
+            element_phase_name = element.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
+
+            logger.write_log('{} "{} {}" have been placed in the phase - {}'.format(element_name, room_number, room_name, element_phase_name), Logger.INFO)
+            return 'successful'
+        except Exception as e:
+            logger.write_log('{} "{} {}" error: {}'.format(element_name, room_number, room_name, e), Logger.ERROR)
+            return 'warnings'
+
+    def _define_element_name(self, flag):
+        if flag:
+            return 'Space'
+        else:
+            return 'Room'
+
+    def _define_have_form(self, number):
+        if number == 1:
+            return ' has'
+        else:
+            return 's have'
+
+    def _define_tobe_form(self, number):
+        if number == 1:
+            return 'is'
+        else:
+            return 'are'
+
+    def _define_s(self, number):
+        if number == 1:
+            return ''
+        else:
+            return 's'
