@@ -16,9 +16,10 @@ logger = Logger(parent_folders_path=os.path.join('Synergy Systems', 'Create Spac
 
 
 class MainWindow(Form):
-    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase):
+    def __init__(self, doc, workset_spaces_id, current_spaces_by_phase, current_rooms_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase):
         self.doc = doc
         self.spaces_by_phase_dct = current_spaces_by_phase
+        self.rooms_by_phase_dct = current_rooms_by_phase
         self.rooms_by_link_and_phase_dct = rooms_by_link_and_phase
         self.workset_spaces_id = workset_spaces_id
         self.current_levels = current_levels
@@ -132,6 +133,7 @@ class MainWindow(Form):
         self.radio_buttons_current_spaces = RadioButton()
         self.radio_buttons_current_spaces.Parent = self.groupbox_current
         self.radio_buttons_current_spaces.Text = "Spaces"
+        self.radio_buttons_current_spaces.Checked = True
         self.radio_buttons_current_spaces.Size = Size(self.radio_button_width, 20)
         self.radio_buttons_current_spaces.Location = Point(self.groupbox_offset_left, self.radio_button_current_location_Y)
 
@@ -144,6 +146,7 @@ class MainWindow(Form):
         self.radio_buttons_link_spaces = RadioButton()
         self.radio_buttons_link_spaces.Parent = self.groupbox_linked
         self.radio_buttons_link_spaces.Text = "Spaces"
+        self.radio_buttons_link_spaces.Checked = True
         self.radio_buttons_link_spaces.Size = Size(self.radio_button_width, 20)
         self.radio_buttons_link_spaces.Location = Point(self.groupbox_offset_left, self.radio_button_link_location_Y)
 

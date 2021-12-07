@@ -63,6 +63,18 @@ def _create_spaces_by_phase_dct(doc):
     return dct
 
 
+def _create_rooms_by_phase_dct(doc):
+    dct = {}
+    fec = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
+    for room in fec:
+        phase_name = room.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
+        room_id = room.Id.IntegerValue
+        if phase_name not in dct:
+            dct[phase_name] = {}
+        dct[phase_name].update({room_id: room})
+    return dct
+
+
 def _create_rooms_by_link_and_phase_dct(current_links):
     dct = {}
     for link_name, link_doc in current_links.items():
@@ -85,10 +97,11 @@ def Main():
         current_levels = _create_level_name_dct(doc)
         current_links = _create_link_document_name_dct(doc)
         current_spaces_by_phase = _create_spaces_by_phase_dct(doc)
+        current_rooms_by_phase = _create_rooms_by_phase_dct(doc)
         rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(current_links)
         active_view_phase = active_view.get_Parameter(BuiltInParameter.VIEW_PHASE).AsValueString()
 
-        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase)
+        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, current_rooms_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase)
         mw.ShowDialog()
     else:
         logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
