@@ -185,22 +185,29 @@ class MainWindow(Form):
             information_window.ShowDialog() 
             return
 
-        window_title = 'Delete All Spaces'
-        message = 'You are going to delete All Spaces in the Current Model.\n\n'
+        if self.radio_buttons_current_spaces.Checked:
+            elements_type = 'Spaces'
+            elements_by_phase_dict = self.spaces_by_phase_dct
+        else:
+            elements_type = 'Rooms'
+            elements_by_phase_dict = self.rooms_by_phase_dct 
+
+        window_title = 'Delete All {}'.format(elements_type)
+        message = 'You are going to delete All {} in the Current Model.\n\n'.format(elements_type)
         confirmation_window = ConfirmationWindow(window_title, message)
         if confirmation_window.ShowDialog() == DialogResult.Cancel:
             return
         with Transaction(self.doc) as t:
-            t.Start('Delete All Spaces')
-            deleleted_counter, phases_counter, phases_list = self._delete_all_spaces()
+            t.Start('Delete All {}'.format(elements_type))
+            deleleted_counter, phases_counter, phases_list = self._delete_all_elements(elements_by_phase_dict)
             t.Commit()
             if t.GetStatus() == TransactionStatus.Committed:
-                self.spaces_by_phase_dct = {}
+                for key in elements_by_phase_dict.keys():
+                    elements_by_phase_dict.pop(key)
                 self.combobox_phase.Items.Clear()
                 self.combobox_phase.Text = " - Select Phase - "
-
-                logger.write_log('{} Spaces have been deleted\nin {} model Phases:\n{}'.format(deleleted_counter, phases_counter, phases_list), Logger.INFO)
-                message = 'Total {} Spaces have been deleted\nin {} model Phases:\n\n{}'.format(deleleted_counter, phases_counter, phases_list)
+                logger.write_log('{} {} have been deleted\nin {} model Phases:\n{}'.format(deleleted_counter, elements_type, phases_counter, phases_list), Logger.INFO)
+                message = 'Total {} {} have been deleted\nin {} model Phases:\n\n{}'.format(deleleted_counter, elements_type, phases_counter, phases_list)
                 information_window = InformationWindow('Report', message)
                 information_window.ShowDialog() 
 
@@ -350,14 +357,14 @@ class MainWindow(Form):
             item = '{} Rooms - {}'.format(rooms_number_total, link_name)
             self.combobox_link.Items.Add(item)
 
-    def _delete_all_spaces(self):
+    def _delete_all_elements(self, elements_by_phase_dict):
         deleleted_counter = 0
         phases_counter = 0
         phases_list = ''
-        for phase_name in self.spaces_by_phase_dct.keys():
+        for phase_name in elements_by_phase_dict.keys():
             phases_counter += 1
             phases_list += '{}\n'.format(phase_name)
-            deleleted_counter += self._delete_spaces_by_phase_name(phase_name)
+            deleleted_counter += self._delete_elements_by_phase_name(elements_by_phase_dict, phase_name)
         return deleleted_counter, phases_counter, phases_list
 
     def _delete_elements_by_phase_name(self, elements_by_phase_dict, phase_name):
