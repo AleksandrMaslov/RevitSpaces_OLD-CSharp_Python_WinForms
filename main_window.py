@@ -273,17 +273,53 @@ class MainWindow(Form):
 
     def _click_btn_create_all(self, sender, e):
         element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
-        selected_link_item = self.combobox_link.SelectedItem
-        if selected_link_item:
-            link_name = selected_link_item.split(' - ', 1)[1]
-            rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
-            number_of_phases_with_spaces = len(rooms_by_phase_dct)
-            if number_of_phases_with_spaces > 0:
+        if self._workset_check_by_checked():
+            selected_link_item = self.combobox_link.SelectedItem
+            if selected_link_item:
+                link_name = selected_link_item.split(' - ', 1)[1]
+                rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
+                number_of_phases_with_spaces = len(rooms_by_phase_dct)
+                if number_of_phases_with_spaces > 0:
+                    window_title = '{}s Creation'.format(element_name)
+                    transaction_name = 'Create All {}s from "{}" Link'.format(element_name, link_name)
+                    rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
+                    message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
+
+                    confirmation_window = ConfirmationWindow(window_title, message, sorted_rooms['total'] > 0)
+                    if confirmation_window.ShowDialog() == DialogResult.Cancel:
+                        return
+
+                    self.Close()
+                    self._elements_creation_by_sorted_rooms(sorted_rooms, transaction_name)
+                else:
+                    message = 'There are no Rooms in the selected Linked model.'
+                    information_window = InformationWindow('Information', message)
+                    information_window.ShowDialog()
+            else:
+                message = 'Link model is not selected in the list of Links.'
+                information_window = InformationWindow('Error', message)
+                information_window.ShowDialog()
+        else:
+            message = '"Model {}s" workset is missing in the Current model. Please create it and relaunch the Addin.\n'.format(element_name)
+            information_window = InformationWindow('Error', message)
+            information_window.ShowDialog()      
+
+    def _click_btn_create_selected(self, sender, e):
+        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
+        if self._workset_check_by_checked():
+            selected_link_item = self.combobox_link.SelectedItem
+            selected_link_phase_item = self.combobox_link_phase.SelectedItem
+            if selected_link_item and selected_link_phase_item:
                 window_title = '{}s Creation'.format(element_name)
-                transaction_name = 'Create All {}s from {} Link'.format(element_name, link_name)
+                link_name = selected_link_item.split(' - ', 1)[1]
+                phase_name = selected_link_phase_item.split(' - ', 1)[1]
+                transaction_name = 'Create {}s from "{}" Phase of "{}" Link'.format(element_name, phase_name, link_name)
+                link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
+                rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
+
                 rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
                 message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
-
+                
                 confirmation_window = ConfirmationWindow(window_title, message, sorted_rooms['total'] > 0)
                 if confirmation_window.ShowDialog() == DialogResult.Cancel:
                     return
@@ -291,39 +327,13 @@ class MainWindow(Form):
                 self.Close()
                 self._elements_creation_by_sorted_rooms(sorted_rooms, transaction_name)
             else:
-                message = 'There are no Rooms in the selected Linked model.'
-                information_window = InformationWindow('Information', message)
+                message = 'Phase is not selected in the Linked model.'
+                information_window = InformationWindow('Error', message)
                 information_window.ShowDialog()
         else:
-            message = 'Link model is not selected in the list of Links.'
+            message = '"Model {}s" workset is missing in the Current model. Please create it and relaunch the Addin.\n'.format(element_name)
             information_window = InformationWindow('Error', message)
-            information_window.ShowDialog()             
-
-    def _click_btn_create_selected(self, sender, e):
-        element_name = self._define_element_name(self.radio_buttons_link_spaces.Checked)
-        selected_link_item = self.combobox_link.SelectedItem
-        selected_link_phase_item = self.combobox_link_phase.SelectedItem
-        if selected_link_item and selected_link_phase_item:
-            window_title = '{}s Creation'.format(element_name)
-            link_name = selected_link_item.split(' - ', 1)[1]
-            phase_name = selected_link_phase_item.split(' - ', 1)[1]
-            transaction_name = 'Create {}s from "{}" Phase of "{}" Link'.format(element_name, phase_name, link_name)
-            link_rooms_from_phase = self.rooms_by_link_and_phase_dct[link_name][phase_name]
-            rooms_by_phase_dct = {phase_name: link_rooms_from_phase}
-
-            rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms = self._analize_rooms_by_area_and_level(rooms_by_phase_dct)
-            message = self._define_creation_message(rooms_area_incorrect, rooms_level_is_missing, rooms_level_incorrect, sorted_rooms)
-            
-            confirmation_window = ConfirmationWindow(window_title, message, sorted_rooms['total'] > 0)
-            if confirmation_window.ShowDialog() == DialogResult.Cancel:
-                return
-
-            self.Close()
-            self._elements_creation_by_sorted_rooms(sorted_rooms, transaction_name)
-        else:
-            message = 'Phase is not selected in the Linked model.'
-            information_window = InformationWindow('Error', message)
-            information_window.ShowDialog()
+            information_window.ShowDialog()   
 
     def _click_btn_help(self, sender, e):
         message = 'Алгоритм работы плагина:\n' \
@@ -549,3 +559,15 @@ class MainWindow(Form):
             return ''
         else:
             return 's'
+
+    def _workset_check_by_checked(self):
+        if self.radio_buttons_link_spaces.Checked:
+            if self.workset_spaces_id:
+                return True
+            else:
+                return False
+        else:
+            if self.workset_rooms_id:
+                return True
+            else:
+                return False
