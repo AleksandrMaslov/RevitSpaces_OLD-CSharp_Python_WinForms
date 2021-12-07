@@ -136,6 +136,7 @@ class MainWindow(Form):
         self.radio_buttons_current_spaces.Checked = True
         self.radio_buttons_current_spaces.Size = Size(self.radio_button_width, 20)
         self.radio_buttons_current_spaces.Location = Point(self.groupbox_offset_left, self.radio_button_current_location_Y)
+        self.radio_buttons_current_spaces.CheckedChanged += self._changed_radiobutton_current_spaces
 
         self.radio_buttons_current_rooms = RadioButton()
         self.radio_buttons_current_rooms.Parent = self.groupbox_current
@@ -174,7 +175,7 @@ class MainWindow(Form):
         self.Load += self._load_window
 
     def _load_window(self, sender, e):
-        self._fill_combobox_phase()
+        self._fill_combobox_phase(self.spaces_by_phase_dct, 'Spaces')
         self._fill_combobox_link()
 
     def _click_btn_delete_all(self, sender, e):
@@ -245,7 +246,16 @@ class MainWindow(Form):
             information_window = InformationWindow('Error', message)
             information_window.ShowDialog()
 
+    def _changed_radiobutton_current_spaces(self, sender, e):
+        if self.radio_buttons_current_spaces.Checked:
+            self.combobox_phase.Items.Clear()
+            self._fill_combobox_phase(self.spaces_by_phase_dct, 'Spaces')
+        else:
+            self.combobox_phase.Items.Clear()
+            self._fill_combobox_phase(self.rooms_by_phase_dct, 'Rooms')
+
     def _click_btn_create_all(self, sender, e):
+        # if self.radio_buttons_current_spaces.Checked == True:
         # if workset_spaces_id:
         # else:
         #     logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
@@ -304,6 +314,7 @@ class MainWindow(Form):
             information_window.ShowDialog()
 
     def _click_btn_help(self, sender, e):
+        # FIX!
         message = 'Алгоритм работы плагина:\n' \
         '- При запуске считываются пространства и помещения из текущей открытой модели для дальнейших действий с ними (полного и частичного удаления). Удаление осуществляется нажатием кнопок Delete All или Delete Selected.\n\n' \
         '- Считываются подгруженные линки и количество помещений в них для дальнейшего создания аналогичных пространств или помещений в текущей модели (полного и частичного создания). Создание осуществляется нажатием кнопок Create All или Create Selected для конкретного линка или конкретной фазы выбранного линка.\n\n' \
@@ -314,10 +325,10 @@ class MainWindow(Form):
         information_window = InformationWindow('Help', message)
         information_window.ShowDialog()
 
-    def _fill_combobox_phase(self):
-        for phase_name, spaces in self.spaces_by_phase_dct.items():
-            spaces_number = len(spaces)
-            item = '{} Spaces - {}'.format(spaces_number, phase_name)
+    def _fill_combobox_phase(self, element_by_phase_dct, element_type):
+        for phase_name, elements in element_by_phase_dct.items():
+            elements_number = len(elements)
+            item = '{} {} - {}'.format(elements_number, element_type, phase_name)
             self.combobox_phase.Items.Add(item)
 
     def _fill_combobox_link(self):
