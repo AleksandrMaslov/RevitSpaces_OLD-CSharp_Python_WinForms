@@ -3,8 +3,8 @@ import clr
 import sys
 sys.path.append(r'C:\Program Files (x86)\IronPython 2.7\Lib')
 import os
-# sys.path.append(os.path.dirname(__file__))
-sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
+sys.path.append(os.path.dirname(__file__))
+# sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, Level, RevitLinkInstance, Transaction,
