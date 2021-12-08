@@ -179,57 +179,55 @@ class MainWindow(Form):
         self._fill_combobox_link()
 
     def _click_btn_delete_all(self, sender, e):
+        element_name = self._define_element_name(self.radio_buttons_current_spaces.Checked)
         if len(self.combobox_phase.Items) == 0:
-            message = 'There are no Spaces in the Current model.'
+            message = 'There are no {}s in the Current model.'.format(element_name)
             information_window = InformationWindow('Information', message)
             information_window.ShowDialog() 
             return
 
         if self.radio_buttons_current_spaces.Checked:
-            elements_type = 'Spaces'
             elements_by_phase_dict = self.spaces_by_phase_dct
         else:
-            elements_type = 'Rooms'
             elements_by_phase_dict = self.rooms_by_phase_dct 
 
-        window_title = 'Delete All {}'.format(elements_type)
-        message = 'You are going to delete All {} in the Current Model.\n\n'.format(elements_type)
+        window_title = 'Delete All {}s'.format(element_name)
+        message = 'You are going to delete All {}s in the Current Model.\n\n'.format(element_name)
         confirmation_window = ConfirmationWindow(window_title, message)
         if confirmation_window.ShowDialog() == DialogResult.Cancel:
             return
         with Transaction(self.doc) as t:
-            t.Start('Delete All {}'.format(elements_type))
-            deleleted_counter, phases_counter, phases_list = self._delete_all_elements(elements_by_phase_dict)
+            t.Start('Delete All {}s'.format(element_name))
+            deleted_counter, phases_counter, phases_list = self._delete_all_elements(elements_by_phase_dict)
             t.Commit()
             if t.GetStatus() == TransactionStatus.Committed:
                 for key in elements_by_phase_dict.keys():
                     elements_by_phase_dict.pop(key)
                 self.combobox_phase.Items.Clear()
                 self.combobox_phase.Text = " - Select Phase - "
-                logger.write_log('{} {} have been deleted\nin {} model Phases:\n{}'.format(deleleted_counter, elements_type, phases_counter, phases_list), Logger.INFO)
-                message = 'Total {} {} have been deleted\nin {} model Phases:\n\n{}'.format(deleleted_counter, elements_type, phases_counter, phases_list)
+                logger.write_log('{} {}{} been deleted\nin {} model Phases:\n{}'.format(deleted_counter, element_name, self._define_have_form(deleted_counter), phases_counter, phases_list), Logger.INFO)
+                message = 'Total {} {}{} been deleted\nin {} model Phases:\n\n{}'.format(deleted_counter, element_name, self._define_have_form(deleted_counter), phases_counter, phases_list)
                 information_window = InformationWindow('Report', message)
                 information_window.ShowDialog() 
 
     def _click_btn_delete_selected(self, sender, e):
+        element_name = self._define_element_name(self.radio_buttons_current_spaces.Checked)
         if self.radio_buttons_current_spaces.Checked:
-            elements_type = 'Spaces'
             elements_by_phase_dict = self.spaces_by_phase_dct
         else:
-            elements_type = 'Rooms'
             elements_by_phase_dict = self.rooms_by_phase_dct           
 
         selected_item = self.combobox_phase.SelectedItem
         if selected_item:
-            window_title = 'Delete Selected {}'.format(elements_type)
+            window_title = 'Delete Selected {}s'.format(element_name)
             phase_name = selected_item.split(' - ', 1)[1]
-            message = 'You are going to delete {} in "{}" Phase in the Current model.\n\n'.format(elements_type, phase_name)
+            message = 'You are going to delete {}s in "{}" Phase in the Current model.\n\n'.format(element_name, phase_name)
             confirmation_window = ConfirmationWindow(window_title, message)
             if confirmation_window.ShowDialog() == DialogResult.Cancel:
                 return
 
             with Transaction(self.doc) as t:
-                t.Start('Delete {} in "{}" Phase'.format(elements_type, phase_name))
+                t.Start('Delete {}s in "{}" Phase'.format(element_name, phase_name))
                 deleted_counter = self._delete_elements_by_phase_name(elements_by_phase_dict, phase_name)
                 t.Commit()
                 if t.GetStatus() == TransactionStatus.Committed:
@@ -237,8 +235,8 @@ class MainWindow(Form):
                     self.combobox_phase.Items.Remove(selected_item)
                     self.combobox_phase.Text = " - Select Phase - "
 
-                    logger.write_log('{} {} have been deleted\nin "{}" model Phase'.format(deleted_counter, elements_type, phase_name), Logger.INFO)
-                    message = 'Total {} {} have been deleted\nin "{}" model Phase'.format(deleted_counter, elements_type, phase_name)
+                    logger.write_log('{} {}{} been deleted\nin "{}" model Phase'.format(deleted_counter, element_name, self._define_have_form(deleted_counter), phase_name), Logger.INFO)
+                    message = 'Total {} {}{} been deleted\nin "{}" model Phase'.format(deleted_counter, element_name, self._define_have_form(deleted_counter), phase_name)
                     information_window = InformationWindow('Report', message)
                     information_window.ShowDialog() 
         else:
