@@ -25,7 +25,7 @@ namespace CreateSpacesFromLinkedRooms
             string button_name = "CreateSpacesFromLinkedRooms";
             string button_text = "Spaces from\nLinked Rooms";
             string button_class_name = button_name + ".Command";
-            string button_tool_tip = "Создание пространств в модели MEP на основе комнат из присоединённых моделей.\n" +
+            string button_tool_tip = "Создание пространств и помещений в модели MEP на основе комнат из присоединённых моделей.\n" +
                                     $"v{typeof(App).Assembly.GetName().Version}";
 
             CreateRibbonTab(application, tab_name);
