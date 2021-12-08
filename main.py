@@ -3,8 +3,8 @@ import clr
 import sys
 sys.path.append(r'C:\Program Files (x86)\IronPython 2.7\Lib')
 import os
-# sys.path.append(os.path.dirname(__file__))
-sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
+sys.path.append(os.path.dirname(__file__))
+# sys.path.append(r'C:\Users\Admin\Desktop\Addins\CreateSpacesFromLinkedRooms')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 from Autodesk.Revit.DB import (FilteredElementCollector, BuiltInCategory, Level, RevitLinkInstance, Transaction,
@@ -26,6 +26,14 @@ def _find_workset_modelspaces_id(doc):
     fec = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
     for workset in fec:
         if workset.Name == 'Model Spaces':
+            workset_id = workset.Id.IntegerValue
+            return workset_id
+
+
+def _find_workset_modelrooms_id(doc):
+    fec = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
+    for workset in fec:
+        if workset.Name == 'Model Rooms':
             workset_id = workset.Id.IntegerValue
             return workset_id
 
@@ -63,6 +71,18 @@ def _create_spaces_by_phase_dct(doc):
     return dct
 
 
+def _create_rooms_by_phase_dct(doc):
+    dct = {}
+    fec = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
+    for room in fec:
+        phase_name = room.get_Parameter(BuiltInParameter.ROOM_PHASE).AsValueString()
+        room_id = room.Id.IntegerValue
+        if phase_name not in dct:
+            dct[phase_name] = {}
+        dct[phase_name].update({room_id: room})
+    return dct
+
+
 def _create_rooms_by_link_and_phase_dct(current_links):
     dct = {}
     for link_name, link_doc in current_links.items():
@@ -81,20 +101,22 @@ def _create_rooms_by_link_and_phase_dct(current_links):
 def Main():
     logger.write_log('Launched successfully', Logger.INFO)
     workset_spaces_id = _find_workset_modelspaces_id(doc)
-    if workset_spaces_id:
-        current_levels = _create_level_name_dct(doc)
-        current_links = _create_link_document_name_dct(doc)
-        current_spaces_by_phase = _create_spaces_by_phase_dct(doc)
-        rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(current_links)
-        active_view_phase = active_view.get_Parameter(BuiltInParameter.VIEW_PHASE).AsValueString()
-
-        mw = MainWindow(doc, workset_spaces_id, current_spaces_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase)
-        mw.ShowDialog()
+    workset_rooms_id = _find_workset_modelrooms_id(doc)
+    current_levels = _create_level_name_dct(doc)
+    current_links = _create_link_document_name_dct(doc)
+    current_spaces_by_phase = _create_spaces_by_phase_dct(doc)
+    current_rooms_by_phase = _create_rooms_by_phase_dct(doc)
+    rooms_by_link_and_phase = _create_rooms_by_link_and_phase_dct(current_links)
+    active_view_phase = active_view.get_Parameter(BuiltInParameter.VIEW_PHASE)
+    if active_view_phase:
+        active_view_phase_name = active_view.get_Parameter(BuiltInParameter.VIEW_PHASE).AsValueString()
+        mw = MainWindow(doc, workset_spaces_id, workset_rooms_id, current_spaces_by_phase, current_rooms_by_phase, rooms_by_link_and_phase, current_levels, active_view_phase_name)
+        mw.ShowDialog()   
     else:
-        logger.write_log('No "Model Spaces" workset. Create it.', Logger.ERROR)
-        message = 'There is no "Model Spaces" workset in the Current model. Please create it and relaunch the Addin.'
+        logger.write_log('Active View without Phase.', Logger.ERROR)
+        message = 'There is no special Phase in the currently active View. Please open the definite View and relaunch the Addin.'
         information_window = InformationWindow('Error', message)
-        information_window.ShowDialog()        
+        information_window.ShowDialog()  
 
 
 Main()
