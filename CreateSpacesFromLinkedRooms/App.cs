@@ -1,91 +1,86 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Windows.Media.Imaging;
-using Autodesk.Revit.DB;
-using Autodesk.Revit.UI;
-using Autodesk.Revit.Attributes;
+﻿using Autodesk.Revit.UI;
+using System;
+using System.Drawing;
+using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
-using System.Reflection;
+using System.Windows.Media.Imaging;
 
 namespace CreateSpacesFromLinkedRooms
 {
-    [Transaction(TransactionMode.ReadOnly)]
-
     public class App : IExternalApplication
     {
-        public static string assemblyPath = typeof(App).Assembly.Location;
-        public static string mainPath = Path.GetDirectoryName(assemblyPath);
-        RibbonPanel ribbonPanel;
+        private string _tabName = "SynSys";
+        private RibbonPanel _panel;
 
-        public Result OnStartup(UIControlledApplication application)
+        public Result OnStartup(UIControlledApplication revit)
         {
-            string tab_name = "SynSys";
-            string panel_name = "Create";
-            string button_name = "CreateSpacesFromLinkedRooms";
-            string button_text = "Spaces from\nLinked Rooms";
-            string button_class_name = button_name + ".Command";
-            string button_tool_tip = "Создание пространств и помещений в модели MEP на основе комнат из присоединённых моделей.\n" +
-                                    $"v{typeof(App).Assembly.GetName().Version}";
-
-            CreateRibbonTab(application, tab_name);
-            CreateRibbonPanel(application, tab_name, panel_name);
-            CreateButton(button_name, button_text, button_class_name, button_tool_tip);
+            CreateRibbonTab(revit);
+            FindOrCreateRibbonPanel(revit);
+            CreateButton();
 
             return Result.Succeeded;
         }
 
-        private static void CreateRibbonTab(UIControlledApplication application, string tab_name)
+        public Result OnShutdown(UIControlledApplication revit)
         {
-            try
-            {
-                application.CreateRibbonTab(tab_name);
-            }
-            catch
-            {
-
-            }
+            return Result.Succeeded;
         }
 
-        private void CreateRibbonPanel(UIControlledApplication application, string tab_name, string panel_name)
+
+        private void CreateRibbonTab(UIControlledApplication revit)
         {
+
             try
             {
-                ribbonPanel = application.CreateRibbonPanel(tab_name, panel_name);
+                revit.CreateRibbonTab(_tabName);
             }
-            catch
+            catch { }
+        }
+
+        private void FindOrCreateRibbonPanel(UIControlledApplication revit)
+        {
+            string panelName = "Model";
+
+            foreach (RibbonPanel panel in revit.GetRibbonPanels(_tabName))
             {
-                List<RibbonPanel> ribbonPanels = application.GetRibbonPanels(tab_name);
-                foreach (RibbonPanel rPanel in ribbonPanels)
+                if (panel.Name == panelName)
                 {
-                    if (rPanel.Name == panel_name)
-                    {
-                        ribbonPanel = rPanel;
-                    }
+                    _panel = panel;
+                    return;
                 }
             }
+
+            _panel = revit.CreateRibbonPanel(_tabName, panelName);
         }
 
-        private void CreateButton(string button_name, string button_text, string button_class_name, string button_tool_tip)
+        private void CreateButton()
         {
-            PushButtonData buttonData = new PushButtonData(button_name, button_text, assemblyPath, button_class_name);
-            PushButton pushButton = ribbonPanel.AddItem(buttonData) as PushButton;
-            pushButton.ToolTip = button_tool_tip;
-            pushButton.LargeImage = PngImageSource("CreateSpacesFromLinkedRooms.Resources.32x32_SpacesFromLinkedRooms.png");
-            //pushButton.Image = PngImageSource("CreateSpacesFromLinkedRooms.Resources.16x16_SpacesFromLinkedRooms.png");
+            var buttonText = "Spaces from\nLinked Rooms";
+            var buttonToolTip = "Создание пространств и помещений в модели MEP на основе комнат из присоединённых моделей.\n" +
+                               $"v{typeof(App).Assembly.GetName().Version}";
+
+            var buttonData = new PushButtonData(
+                typeof(Command).Namespace,
+                buttonText,
+                typeof(Command).Assembly.Location,
+                typeof(Command).FullName
+            );
+
+            var pushButton = _panel.AddItem(buttonData) as PushButton;
+            pushButton.ToolTip = buttonToolTip;
+            pushButton.LargeImage = GetImageSourceByBitMapFromResource(Properties.Resources.LargeImage);
+            pushButton.Image = GetImageSourceByBitMapFromResource(Properties.Resources.Image);
         }
 
-        private ImageSource PngImageSource(string embeddedPathname)
+        private ImageSource GetImageSourceByBitMapFromResource(Bitmap source)
         {
-            Stream st = this.GetType().Assembly.GetManifestResourceStream(embeddedPathname);
-            PngBitmapDecoder decoder = new PngBitmapDecoder(st, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
-            return decoder.Frames[0];
-        }
-
-
-        public Result OnShutdown(UIControlledApplication application)
-        {
-            return Result.Succeeded;
+            return Imaging.CreateBitmapSourceFromHBitmap(
+                source.GetHbitmap(),
+                IntPtr.Zero,
+                Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions()
+            );
         }
     }
 }
