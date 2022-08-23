@@ -247,8 +247,9 @@ class MainWindow(Form):
     def _changed_combobox_link_selection(self, sender, e):
         self.combobox_link_phase.Text = " - Select Phase - "
         selected_link_item = self.combobox_link.SelectedItem
+        separate = ' - '
         if selected_link_item:
-            link_name = selected_link_item.split(' - ')[1]
+            link_name = separate.join(selected_link_item.split(separate)[1:])
             link_rooms_by_phase_dct = self.rooms_by_link_and_phase_dct[link_name]
             self.combobox_link_phase.Items.Clear()
             for phase_name, rooms in link_rooms_by_phase_dct.items():
