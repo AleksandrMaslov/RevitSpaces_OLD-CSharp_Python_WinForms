@@ -118,8 +118,9 @@
       PostBuildMacros;
     </PostBuildEventDependsOn>
     <PostBuildEvent>set vesionDir=$(ProjectDir)setup\v@(VersionNumber)\
-set dataDir=$(ProjectDir)dataForBuild\
 set libDir=%25vesionDir%25Lib\
+set dataDir=$(ProjectDir)dataForBuild\
+set pythonDir=$(ProjectDir)IronPython\
 
 if $(ConfigurationName) == Release (
 
@@ -133,6 +134,9 @@ if $(ConfigurationName) == Release (
   cd %25dataDir%25
   for %25%25i in (*.exe) do copy "%25dataDir%25%25%25i" "%25vesionDir%25%25%25i" /Y
   for %25%25i in (*.addin) do copy "%25dataDir%25%25%25i" "%25libDir%25%25%25i" /Y
+
+  cd %25pythonDir%25
+  xcopy "%25pythonDir%25*" "%25libDir%25%25" /Y /s
 )</PostBuildEvent>
   </PropertyGroup>
 </Project>
