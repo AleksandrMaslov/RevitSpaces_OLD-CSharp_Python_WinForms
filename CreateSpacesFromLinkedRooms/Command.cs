@@ -20,9 +20,15 @@ namespace CreateSpacesFromLinkedRooms
             UIDocument ui_doc = ui_app?.ActiveUIDocument;
             Document doc = ui_doc?.Document;
 
-            string mainModule = Path.Combine(Path.GetDirectoryName(typeof(Command).Assembly.Location), "main.py");
             ScriptEngine engine = Python.CreateEngine();
             ScriptScope scope = engine.CreateScope();
+
+            #if DEBUG
+            var rootDir = @"D:\WORK\Synergy Systems\Addin\CreateSpacesFromLinkedRooms\CreateSpacesFromLinkedRooms\IronPython";
+            #else
+            var rootDir = Path.GetDirectoryName(typeof(Command).Assembly.Location);
+            #endif
+            var mainModule = Path.Combine(rootDir, "main.py");
 
             scope.SetVariable("app", app);
             scope.SetVariable("doc", doc);
