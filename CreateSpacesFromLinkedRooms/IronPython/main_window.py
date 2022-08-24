@@ -407,7 +407,7 @@ class MainWindow(Form):
                     rooms_level_is_missing['total'] += 1
                     if room_level_name not in rooms_level_is_missing['names']:
                         rooms_level_is_missing['names'].append(room_level_name)
-                elif room_level_elevation != self.current_levels[room_level_name]['elevation']:
+                elif round(room_level_elevation, 2) != round(self.current_levels[room_level_name]['elevation'], 2):
                     rooms_level_incorrect['total'] += 1
                     if room_level_name not in rooms_level_incorrect['names']:
                         rooms_level_incorrect['names'].append(room_level_name)
@@ -415,7 +415,7 @@ class MainWindow(Form):
                     rooms_level_is_missing['total'] += 1
                     if room_upper_limit_name not in rooms_level_is_missing['names']:
                         rooms_level_is_missing['names'].append(room_upper_limit_name)                    
-                elif (room_upper_limit) and (room_upper_limit_elevation != self.current_levels[room_upper_limit_name]['elevation']):
+                elif (room_upper_limit) and (round(room_upper_limit_elevation, 2) != round(self.current_levels[room_upper_limit_name]['elevation'], 2)):
                     rooms_level_incorrect['total'] += 1
                     if room_upper_limit_name not in rooms_level_incorrect['names']:
                         rooms_level_incorrect['names'].append(room_upper_limit_name)
